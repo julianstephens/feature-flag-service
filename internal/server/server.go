@@ -1,7 +1,6 @@
 package server
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -9,13 +8,15 @@ import (
 
 	ffpb "github.com/julianstephens/feature-flag-service/gen/go/grpc/v1/featureflag.v1"
 	"github.com/julianstephens/feature-flag-service/internal/flag"
+	"github.com/julianstephens/go-utils/httputil/response"
 )
 
+
 func StartREST(addr string) error {
+	responder := response.NewWithLogging()
 	router := mux.NewRouter()
 	router.HandleFunc("/checkhealth", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
+		responder.OK(w, r, map[string]string{"status": "OK", "version": "1.0", "name": "Feature Flag Service"})
 	})
 
 	srv := &http.Server{
@@ -23,18 +24,12 @@ func StartREST(addr string) error {
 		Handler: router,
 	}
 
-	log.Printf("Starting REST server on %s", addr)
 	return srv.ListenAndServe()
 }
 
-type flagGRPCServer struct {
-	ffpb.UnimplementedFlagServiceServer
-	svc flag.Service
-}
-
 func RegisterGRPC(grpcServer *grpc.Server, flagSvc flag.Service) {
-	ffpb.RegisterFlagServiceServer(grpcServer, &flagGRPCServer{
+	ffpb.RegisterFlagServiceServer(grpcServer, &flag.FlagGRPCServer{
 		UnimplementedFlagServiceServer: ffpb.UnimplementedFlagServiceServer{},
-		svc: flagSvc,
+		Service:                        flagSvc,
 	})
 }

@@ -1,7 +1,7 @@
 openapi: 3.1.1
 info:
   title: Feature Flag & Config API
-  version: '1.0'
+  version: "1.0"
 servers:
   - url: https://api.featureflags.example.com/v1
 paths:
@@ -13,25 +13,25 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/FlagCreateRequest'
+              $ref: "#/components/schemas/FlagCreateRequest"
       responses:
-        '201':
+        "201":
           description: Flag created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Flag'
+                $ref: "#/components/schemas/Flag"
     get:
       summary: List all feature flags
       responses:
-        '200':
+        "200":
           description: A list of feature flags
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Flag'
+                  $ref: "#/components/schemas/Flag"
   /flags/{flag_id}:
     get:
       summary: Get details of a feature flag
@@ -42,12 +42,12 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Flag details
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Flag'
+                $ref: "#/components/schemas/Flag"
     patch:
       summary: Update a feature flag
       parameters:
@@ -61,14 +61,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/FlagUpdateRequest'
+              $ref: "#/components/schemas/FlagUpdateRequest"
       responses:
-        '200':
+        "200":
           description: Flag updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Flag'
+                $ref: "#/components/schemas/Flag"
     delete:
       summary: Delete a feature flag
       parameters:
@@ -78,7 +78,7 @@ paths:
           schema:
             type: string
       responses:
-        '204':
+        "204":
           description: Flag deleted
 components:
   schemas:
@@ -112,6 +112,8 @@ components:
           type: boolean
     FlagUpdateRequest:
       type: object
+      required:
+        - enabled
       properties:
         name:
           type: string

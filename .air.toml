@@ -1,0 +1,24 @@
+# Working directory
+# . or absolute path, please note that the directories following must be under root.
+root = "."
+tmp_dir = "tmp"
+
+[build]
+# Just plain old shell command. You could use `make` as well.
+cmd = "go build -o ./tmp/main ./cmd/api/main.go"
+# Binary file yields from `cmd`.
+bin = "./tmp/main"
+# Don't save right away (ms)
+delay = 1000
+# Watch these filename extensions.
+include_ext = ["go", "yaml", "yml"]
+# Ignore these filename extensions or directories.
+exclude_dir = ["tmp", "docs"]
+# Exclude specific regular expressions.
+exclude_regex = ["_test\\\\.go"]
+# Save logs to file
+log = "air_errors.log"
+
+[misc]
+# Delete tmp directory on exit
+clean_on_exit = true

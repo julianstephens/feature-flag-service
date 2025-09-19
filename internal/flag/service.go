@@ -9,6 +9,7 @@ import (
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 
+	ffpb "github.com/julianstephens/feature-flag-service/gen/go/grpc/v1/featureflag.v1"
 	"github.com/julianstephens/feature-flag-service/internal/config"
 	"github.com/julianstephens/feature-flag-service/internal/storage"
 	"github.com/julianstephens/feature-flag-service/internal/utils"
@@ -33,25 +34,19 @@ type Service interface {
 	ListFlags(ctx context.Context) ([]*Flag, error)
 }
 
-type FlagService struct {
+type EtcdService struct {
 	conf  *config.Config
 	store *storage.EtcdClient
 }
 
-func NewService(conf *config.Config) Service {
-	etcdClient, err := storage.NewEtcdClient([]string{conf.StorageEndpoint}, "/featureflags/")
-	if err != nil {
-		log.Fatalf("Failed to connect to etcd: %v", err)
-	}
-	defer etcdClient.Client.Close()
-
-	return &FlagService{
-		conf: conf,
+func NewService(conf *config.Config, etcdClient *storage.EtcdClient) Service {
+	return &EtcdService{
+		conf:  conf,
 		store: etcdClient,
 	}
 }
 
-func (s *FlagService) ListFlags(ctx context.Context) ([]*Flag, error) {
+func (s *EtcdService) ListFlags(ctx context.Context) ([]*Flag, error) {
 	res, err := s.store.Client.Get(ctx, s.store.KeyPrefix, clientv3.WithPrefix())
 	if err != nil {
 		return nil, err
@@ -69,15 +64,16 @@ func (s *FlagService) ListFlags(ctx context.Context) ([]*Flag, error) {
 	return flags, nil
 }
 
-func (s *FlagService) GetFlag(ctx context.Context, id string) (*Flag, error) {
+func (s *EtcdService) GetFlag(ctx context.Context, id string) (*Flag, error) {
 	resp, err := s.store.Client.Get(ctx, s.store.GetKey(id))
 	if err != nil {
 		return nil, err
 	}
+
 	if len(resp.Kvs) == 0 {
 		return nil, ErrFlagNotFound
 	}
-	
+
 	var flag Flag
 	if err := json.Unmarshal(resp.Kvs[0].Value, &flag); err != nil {
 		return nil, err
@@ -85,7 +81,7 @@ func (s *FlagService) GetFlag(ctx context.Context, id string) (*Flag, error) {
 	return &flag, nil
 }
 
-func (s *FlagService) CreateFlag(ctx context.Context, name, description string, enabled bool) (*Flag, error) {
+func (s *EtcdService) CreateFlag(ctx context.Context, name, description string, enabled bool) (*Flag, error) {
 	id := utils.GenerateID()
 	now := time.Now()
 	flag := &Flag{
@@ -96,7 +92,7 @@ func (s *FlagService) CreateFlag(ctx context.Context, name, description string, 
 		CreatedAt:   now,
 		UpdatedAt:   now,
 	}
-	
+
 	data, err := json.Marshal(flag)
 	if err != nil {
 		return nil, err
@@ -110,12 +106,12 @@ func (s *FlagService) CreateFlag(ctx context.Context, name, description string, 
 	return flag, nil
 }
 
-func (s *FlagService) UpdateFlag(ctx context.Context, id, name, description string, enabled bool) (*Flag, error) {
+func (s *EtcdService) UpdateFlag(ctx context.Context, id, name, description string, enabled bool) (*Flag, error) {
 	flag, err := s.GetFlag(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	flag.Name = name
 	flag.Description = description
 	flag.Enabled = enabled
@@ -125,7 +121,7 @@ func (s *FlagService) UpdateFlag(ctx context.Context, id, name, description stri
 	if err != nil {
 		return nil, err
 	}
-	
+
 	_, err = s.store.Client.Put(ctx, s.store.GetKey(id), string(data))
 	if err != nil {
 		return nil, err
@@ -134,7 +130,7 @@ func (s *FlagService) UpdateFlag(ctx context.Context, id, name, description stri
 	return flag, nil
 }
 
-func (s *FlagService) DeleteFlag(ctx context.Context, id string) error {
+func (s *EtcdService) DeleteFlag(ctx context.Context, id string) error {
 	res, err := s.store.Client.Delete(ctx, s.store.GetKey(id))
 	if err != nil {
 		return err
@@ -143,4 +139,35 @@ func (s *FlagService) DeleteFlag(ctx context.Context, id string) error {
 		return ErrFlagNotFound
 	}
 	return nil
+}
+
+
+func (f *Flag) ToProto() *ffpb.Flag {
+	return &ffpb.Flag{
+		Id:          f.ID,
+		Name:        f.Name,
+		Description: f.Description,
+		Enabled:     f.Enabled,
+		CreatedAt:   f.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:   f.UpdatedAt.Format(time.RFC3339),
+	}
+}
+
+func FlagFromProto(protoFlag *ffpb.Flag) (*Flag, error) {
+	createdAt, err := time.Parse(time.RFC3339, protoFlag.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	updatedAt, err := time.Parse(time.RFC3339, protoFlag.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &Flag{
+		ID:          protoFlag.Id,
+		Name:        protoFlag.Name,
+		Description: protoFlag.Description,
+		Enabled:     protoFlag.Enabled,
+		CreatedAt:   createdAt,
+		UpdatedAt:   updatedAt,
+	}, nil
 }

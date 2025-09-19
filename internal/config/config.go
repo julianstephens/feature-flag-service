@@ -7,9 +7,10 @@ import (
 )
 
 type Config struct {
-	HTTPPort      string `envconfig:"HTTP_PORT" default:"8080"`
-	StorageEndpoint  string `envconfig:"STORAGE_URL" default:"localhost:2379"`
-	DBUrl   string `envconfig:"DB_URL"`
+	HTTPPort        string `envconfig:"HTTP_PORT" default:"8080"`
+	GRPCPort        string `envconfig:"GRPC_PORT" default:"9090"`
+	StorageEndpoint string `envconfig:"STORAGE_URL" default:"localhost:2379"`
+	DBUrl           string `envconfig:"DB_URL"`
 }
 
 func LoadConfig() *Config {

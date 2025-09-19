@@ -6,16 +6,15 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
-
 type EtcdClient struct {
-	Client *clientv3.Client
-	KeyPrefix string	
+	Client    *clientv3.Client
+	KeyPrefix string
 }
 
 func NewEtcdClient(endpoints []string, keyPrefix string) (*EtcdClient, error) {
 	cfg := clientv3.Config{
 		Endpoints:   endpoints,
-		DialTimeout: 5 * time.Second,
+		DialTimeout: 30 * time.Second,
 	}
 	client, err := clientv3.New(cfg)
 	if err != nil {
@@ -23,7 +22,7 @@ func NewEtcdClient(endpoints []string, keyPrefix string) (*EtcdClient, error) {
 	}
 
 	return &EtcdClient{
-		Client: client,
+		Client:    client,
 		KeyPrefix: keyPrefix,
 	}, nil
 }

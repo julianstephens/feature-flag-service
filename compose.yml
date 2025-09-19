@@ -4,14 +4,15 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: feature-flag-api
-    environment:
-      STORAGE_ENDPOINT: "etcd:2379"
-      DB_URL: "${DB_URL}"
-      JWT_SECRET: "${JWT_SECRET}"
+    volumes:
+      - .:/app
+    env_file:
+      - ./.env
     ports:
       - "8080:8080"
+      - "9090:9090"
     depends_on:
-      # - etcd
+      - etcd
       - postgres
     restart: unless-stopped
 

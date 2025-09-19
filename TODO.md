@@ -49,7 +49,8 @@ This checklist covers major tasks required to complete the Feature Flag Service 
 
 ## 6. Protobuf & OpenAPI
 
-- [ ] Define/complete proto files for `FlagService`, etc.
+[~] Define/complete proto files for `FlagService`, etc.
+
 - [ ] Generate gRPC and REST server/client stubs
 - [ ] Provide OpenAPI spec for HTTP API
 
@@ -74,8 +75,8 @@ This checklist covers major tasks required to complete the Feature Flag Service 
 
 ## 9. Deployment
 
-- [ ] Dockerfile for API service
-- [ ] `docker-compose.yaml` for local stack (API, etcd, Postgres)
+- [x] Dockerfile for API service
+- [x] `docker-compose.yaml` for local stack (API, etcd, Postgres)
 - [ ] (Optional) Kubernetes manifests in `deploy/`
 - [ ] (Optional) GitHub Actions CI/CD config
 
@@ -89,5 +90,7 @@ This checklist covers major tasks required to complete the Feature Flag Service 
 ---
 
 **Legend:**
-[x] = Implemented in this chat
-[ ] = Still needed
+
+- [x] = Implemented
+      [~] = In Progress
+- [ ] = Not Started
