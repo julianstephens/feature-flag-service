@@ -18,7 +18,7 @@ import (
 
 func main() {
 	conf := config.LoadConfig()
-	etcdClient, err := storage.NewEtcdClient([]string{conf.StorageEndpoint}, "/featureflags/")
+	etcdClient, err := storage.NewEtcdStore([]string{conf.StorageEndpoint}, "/featureflags/")
 	if err != nil {
 		log.Fatalf("Failed to connect to etcd: %v", err)
 	}
@@ -27,7 +27,7 @@ func main() {
 
 	go func() {
 		log.Printf("Starting REST API on :%s...", conf.HTTPPort)
-		if err := server.StartREST(":" + conf.HTTPPort); err != nil && err != http.ErrServerClosed {
+		if err := server.StartREST(":" + conf.HTTPPort, conf, flagService); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("REST server error: %v", err)
 		}
 	}()

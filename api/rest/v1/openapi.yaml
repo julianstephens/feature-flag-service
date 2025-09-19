@@ -3,7 +3,7 @@ info:
   title: Feature Flag & Config API
   version: "1.0"
 servers:
-  - url: https://api.featureflags.example.com/v1
+  - url: http://localhost:8080/api/v1
 paths:
   /flags:
     post:

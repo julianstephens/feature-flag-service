@@ -1,0 +1,1 @@
+DROP TABLE rbac_user_roles;

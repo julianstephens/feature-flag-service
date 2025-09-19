@@ -18,12 +18,12 @@ import (
 var ErrFlagNotFound = errors.New("flag not found")
 
 type Flag struct {
-	ID          string
-	Name        string
-	Description string
-	Enabled     bool
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Enabled     bool `json:"enabled"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
 type Service interface {
@@ -34,29 +34,35 @@ type Service interface {
 	ListFlags(ctx context.Context) ([]*Flag, error)
 }
 
-type EtcdService struct {
+type FlagService struct {
 	conf  *config.Config
-	store *storage.EtcdClient
+	store storage.Store[clientv3.OpOption]
+	prefix string
 }
 
-func NewService(conf *config.Config, etcdClient *storage.EtcdClient) Service {
-	return &EtcdService{
+func NewService(conf *config.Config, etcdClient *storage.EtcdStore) Service {
+	return &FlagService{
 		conf:  conf,
 		store: etcdClient,
+		prefix: conf.FlagServicePrefix,
 	}
 }
 
-func (s *EtcdService) ListFlags(ctx context.Context) ([]*Flag, error) {
-	res, err := s.store.Client.Get(ctx, s.store.KeyPrefix, clientv3.WithPrefix())
+func (s *FlagService) GetKey(key string) string {
+	return s.prefix + key
+}
+
+func (s *FlagService) ListFlags(ctx context.Context) ([]*Flag, error) {
+	res, err := s.store.List(ctx, "")
 	if err != nil {
 		return nil, err
 	}
 
 	var flags []*Flag
-	for _, kv := range res.Kvs {
+	for _, v := range res {
 		var flag Flag
-		if err := json.Unmarshal(kv.Value, &flag); err != nil {
-			log.Printf("Failed to unmarshal flag data: %v", err)
+		if err := json.Unmarshal([]byte(v), &flag); err != nil {
+			log.Printf("error unmarshaling flag: %v", err)
 			continue
 		}
 		flags = append(flags, &flag)
@@ -64,24 +70,23 @@ func (s *EtcdService) ListFlags(ctx context.Context) ([]*Flag, error) {
 	return flags, nil
 }
 
-func (s *EtcdService) GetFlag(ctx context.Context, id string) (*Flag, error) {
-	resp, err := s.store.Client.Get(ctx, s.store.GetKey(id))
+func (s *FlagService) GetFlag(ctx context.Context, id string) (*Flag, error) {
+	resp, err := s.store.Get(ctx, s.GetKey(id))
 	if err != nil {
+		if errors.Is(err, storage.ErrKeyNotFound) {
+			return nil, ErrFlagNotFound
+		}
 		return nil, err
 	}
 
-	if len(resp.Kvs) == 0 {
-		return nil, ErrFlagNotFound
-	}
-
 	var flag Flag
-	if err := json.Unmarshal(resp.Kvs[0].Value, &flag); err != nil {
+	if err := json.Unmarshal([]byte(resp), &flag); err != nil {
 		return nil, err
 	}
 	return &flag, nil
 }
 
-func (s *EtcdService) CreateFlag(ctx context.Context, name, description string, enabled bool) (*Flag, error) {
+func (s *FlagService) CreateFlag(ctx context.Context, name, description string, enabled bool) (*Flag, error) {
 	id := utils.GenerateID()
 	now := time.Now()
 	flag := &Flag{
@@ -98,7 +103,7 @@ func (s *EtcdService) CreateFlag(ctx context.Context, name, description string, 
 		return nil, err
 	}
 
-	_, err = s.store.Client.Put(ctx, s.store.GetKey(id), string(data))
+	_, err = s.store.Put(ctx, s.GetKey(id), string(data))
 	if err != nil {
 		return nil, err
 	}
@@ -106,8 +111,8 @@ func (s *EtcdService) CreateFlag(ctx context.Context, name, description string, 
 	return flag, nil
 }
 
-func (s *EtcdService) UpdateFlag(ctx context.Context, id, name, description string, enabled bool) (*Flag, error) {
-	flag, err := s.GetFlag(ctx, id)
+func (s *FlagService) UpdateFlag(ctx context.Context, id, name, description string, enabled bool) (*Flag, error) {
+	flag, err := s.GetFlag(ctx, s.GetKey(id))
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +127,7 @@ func (s *EtcdService) UpdateFlag(ctx context.Context, id, name, description stri
 		return nil, err
 	}
 
-	_, err = s.store.Client.Put(ctx, s.store.GetKey(id), string(data))
+	_, err = s.store.Put(ctx, s.GetKey(id), string(data))
 	if err != nil {
 		return nil, err
 	}
@@ -130,17 +135,9 @@ func (s *EtcdService) UpdateFlag(ctx context.Context, id, name, description stri
 	return flag, nil
 }
 
-func (s *EtcdService) DeleteFlag(ctx context.Context, id string) error {
-	res, err := s.store.Client.Delete(ctx, s.store.GetKey(id))
-	if err != nil {
-		return err
-	}
-	if res.Deleted == 0 {
-		return ErrFlagNotFound
-	}
-	return nil
+func (s *FlagService) DeleteFlag(ctx context.Context, id string) error {
+	return s.store.Delete(ctx, s.GetKey(id))
 }
-
 
 func (f *Flag) ToProto() *ffpb.Flag {
 	return &ffpb.Flag{
@@ -170,4 +167,12 @@ func FlagFromProto(protoFlag *ffpb.Flag) (*Flag, error) {
 		CreatedAt:   createdAt,
 		UpdatedAt:   updatedAt,
 	}, nil
+}
+
+func ParseFlag(data []byte) (*Flag, error) {
+	var flag Flag
+	if err := json.Unmarshal(data, &flag); err != nil {
+		return nil, err
+	}
+	return &flag, nil
 }
