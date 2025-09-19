@@ -1,2 +1,4 @@
 gen/**/*.go
 .env*
+tmp
+.vscode
