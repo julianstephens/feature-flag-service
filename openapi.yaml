@@ -1,0 +1,433 @@
+openapi: 3.0.3
+info:
+  title: Feature Flag Service API
+  description: |
+    A comprehensive API for managing feature flags in distributed systems.
+    
+    This service provides CRUD operations for feature flags with support for:
+    - Feature flag management (create, read, update, delete, list)
+    - Health monitoring
+    - Real-time updates via gRPC streaming
+    
+    The service uses etcd for high-performance flag storage and PostgreSQL for audit logs and RBAC data.
+  version: "1.0.0"
+  contact:
+    name: Feature Flag Service
+    url: https://github.com/julianstephens/feature-flag-service
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local development server
+  - url: https://api.featureflags.example.com/api/v1
+    description: Production server
+
+security:
+  - BearerAuth: []
+  - {}
+
+paths:
+  /checkhealth:
+    get:
+      summary: Health check endpoint
+      description: Returns the current health status of the service
+      operationId: checkHealth
+      tags:
+        - Health
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "OK"
+                  version:
+                    type: string
+                    example: "1.0"
+                  name:
+                    type: string
+                    example: "Feature Flag Service"
+                required:
+                  - status
+                  - version
+                  - name
+              examples:
+                healthy:
+                  summary: Healthy service response
+                  value:
+                    status: "OK"
+                    version: "1.0"
+                    name: "Feature Flag Service"
+
+  /flags:
+    get:
+      summary: List all feature flags
+      description: Retrieve a list of all feature flags in the system
+      operationId: listFlags
+      tags:
+        - Feature Flags
+      responses:
+        '200':
+          description: List of feature flags
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Flag'
+              examples:
+                flagList:
+                  summary: Example list of flags
+                  value:
+                    - id: "flag-001"
+                      name: "new-ui-feature"
+                      description: "Enable the new user interface"
+                      enabled: true
+                      createdAt: "2024-01-15T10:30:00Z"
+                      updatedAt: "2024-01-15T10:30:00Z"
+                    - id: "flag-002"
+                      name: "api-v2-endpoint"
+                      description: "Enable version 2 of the API"
+                      enabled: false
+                      createdAt: "2024-01-16T09:15:00Z"
+                      updatedAt: "2024-01-16T14:22:00Z"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      summary: Create a new feature flag
+      description: Create a new feature flag with the specified properties
+      operationId: createFlag
+      tags:
+        - Feature Flags
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFlagRequest'
+            examples:
+              createNewFeature:
+                summary: Create a new feature flag
+                value:
+                  name: "dark-mode"
+                  description: "Enable dark mode for the application"
+                  enabled: false
+      responses:
+        '201':
+          description: Flag created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Flag'
+              examples:
+                createdFlag:
+                  summary: Successfully created flag
+                  value:
+                    id: "flag-003"
+                    name: "dark-mode"
+                    description: "Enable dark mode for the application"
+                    enabled: false
+                    createdAt: "2024-01-17T11:45:00Z"
+                    updatedAt: "2024-01-17T11:45:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /flags/{flagKey}:
+    get:
+      summary: Get a specific feature flag
+      description: Retrieve details of a specific feature flag by its key/ID
+      operationId: getFlag
+      tags:
+        - Feature Flags
+      parameters:
+        - name: flagKey
+          in: path
+          required: true
+          description: The unique identifier of the feature flag
+          schema:
+            type: string
+          example: "flag-001"
+      responses:
+        '200':
+          description: Feature flag details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Flag'
+              examples:
+                flagDetails:
+                  summary: Feature flag details
+                  value:
+                    id: "flag-001"
+                    name: "new-ui-feature"
+                    description: "Enable the new user interface"
+                    enabled: true
+                    createdAt: "2024-01-15T10:30:00Z"
+                    updatedAt: "2024-01-15T10:30:00Z"
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      summary: Update a feature flag
+      description: Update an existing feature flag with new properties
+      operationId: updateFlag
+      tags:
+        - Feature Flags
+      parameters:
+        - name: flagKey
+          in: path
+          required: true
+          description: The unique identifier of the feature flag
+          schema:
+            type: string
+          example: "flag-001"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateFlagRequest'
+            examples:
+              updateFlag:
+                summary: Update a feature flag
+                value:
+                  name: "new-ui-feature-v2"
+                  description: "Enable the updated user interface"
+                  enabled: true
+      responses:
+        '200':
+          description: Flag updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Flag'
+              examples:
+                updatedFlag:
+                  summary: Successfully updated flag
+                  value:
+                    id: "flag-001"
+                    name: "new-ui-feature-v2"
+                    description: "Enable the updated user interface"
+                    enabled: true
+                    createdAt: "2024-01-15T10:30:00Z"
+                    updatedAt: "2024-01-17T12:15:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      summary: Delete a feature flag
+      description: Remove a feature flag from the system
+      operationId: deleteFlag
+      tags:
+        - Feature Flags
+      parameters:
+        - name: flagKey
+          in: path
+          required: true
+          description: The unique identifier of the feature flag
+          schema:
+            type: string
+          example: "flag-001"
+      responses:
+        '204':
+          description: Flag deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token for API authentication
+
+  schemas:
+    Flag:
+      type: object
+      description: Represents a feature flag with its current state and metadata
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the feature flag
+          example: "flag-001"
+        name:
+          type: string
+          description: Human-readable name of the feature flag
+          example: "new-ui-feature"
+        description:
+          type: string
+          description: Detailed description of what the feature flag controls
+          example: "Enable the new user interface"
+        enabled:
+          type: boolean
+          description: Current state of the feature flag
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the flag was created
+          example: "2024-01-15T10:30:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the flag was last updated
+          example: "2024-01-15T10:30:00Z"
+      required:
+        - id
+        - name
+        - enabled
+        - createdAt
+        - updatedAt
+
+    CreateFlagRequest:
+      type: object
+      description: Request payload for creating a new feature flag
+      properties:
+        name:
+          type: string
+          description: Human-readable name of the feature flag
+          minLength: 1
+          maxLength: 255
+          example: "dark-mode"
+        description:
+          type: string
+          description: Detailed description of what the feature flag controls
+          maxLength: 1000
+          example: "Enable dark mode for the application"
+        enabled:
+          type: boolean
+          description: Initial state of the feature flag
+          default: false
+          example: false
+      required:
+        - name
+
+    UpdateFlagRequest:
+      type: object
+      description: Request payload for updating an existing feature flag
+      properties:
+        name:
+          type: string
+          description: Human-readable name of the feature flag
+          minLength: 1
+          maxLength: 255
+          example: "new-ui-feature-v2"
+        description:
+          type: string
+          description: Detailed description of what the feature flag controls
+          maxLength: 1000
+          example: "Enable the updated user interface"
+        enabled:
+          type: boolean
+          description: New state of the feature flag
+          example: true
+      required:
+        - name
+        - description
+        - enabled
+
+    Error:
+      type: object
+      description: Standard error response format
+      properties:
+        error:
+          type: string
+          description: Error message describing what went wrong
+          example: "Invalid request format"
+        code:
+          type: integer
+          description: HTTP status code
+          example: 400
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the error occurred
+          example: "2024-01-17T12:30:00Z"
+      required:
+        - error
+        - code
+        - timestamp
+
+  responses:
+    BadRequest:
+      description: Bad request - invalid input parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            invalidJson:
+              summary: Invalid JSON in request body
+              value:
+                error: "Invalid JSON format in request body"
+                code: 400
+                timestamp: "2024-01-17T12:30:00Z"
+            missingRequired:
+              summary: Missing required field
+              value:
+                error: "Missing required field: name"
+                code: 400
+                timestamp: "2024-01-17T12:30:00Z"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            flagNotFound:
+              summary: Feature flag not found
+              value:
+                error: "flag not found"
+                code: 404
+                timestamp: "2024-01-17T12:30:00Z"
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            serverError:
+              summary: Internal server error
+              value:
+                error: "Internal server error"
+                code: 500
+                timestamp: "2024-01-17T12:30:00Z"
+            databaseError:
+              summary: Database connection error
+              value:
+                error: "Failed to connect to database"
+                code: 500
+                timestamp: "2024-01-17T12:30:00Z"
+
+tags:
+  - name: Health
+    description: Service health monitoring endpoints
+  - name: Feature Flags
+    description: Feature flag management operations
+
+externalDocs:
+  description: Project Repository
+  url: https://github.com/julianstephens/feature-flag-service
