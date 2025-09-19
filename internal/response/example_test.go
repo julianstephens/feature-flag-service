@@ -91,3 +91,50 @@ func ExampleNewCustom() {
 	// Output:
 	// Status: 200
 }
+
+// Example_statusMethods demonstrates the convenience status methods.
+func Example_statusMethods() {
+	responder := response.New()
+
+	// Example handlers using status methods
+	okHandler := func(w http.ResponseWriter, r *http.Request) {
+		data := map[string]string{"status": "success"}
+		responder.OK(w, r, data)
+	}
+
+	createdHandler := func(w http.ResponseWriter, r *http.Request) {
+		data := map[string]interface{}{
+			"id":      "123",
+			"created": true,
+		}
+		responder.Created(w, r, data)
+	}
+
+	unauthorizedHandler := func(w http.ResponseWriter, r *http.Request) {
+		data := map[string]string{"error": "access denied"}
+		responder.Unauthorized(w, r, data)
+	}
+
+	// Test OK method
+	req := httptest.NewRequest("GET", "/success", nil)
+	w := httptest.NewRecorder()
+	okHandler(w, req)
+	fmt.Printf("OK Status: %d\n", w.Code)
+
+	// Test Created method
+	req = httptest.NewRequest("POST", "/create", nil)
+	w = httptest.NewRecorder()
+	createdHandler(w, req)
+	fmt.Printf("Created Status: %d\n", w.Code)
+
+	// Test Unauthorized method
+	req = httptest.NewRequest("GET", "/protected", nil)
+	w = httptest.NewRecorder()
+	unauthorizedHandler(w, req)
+	fmt.Printf("Unauthorized Status: %d\n", w.Code)
+
+	// Output:
+	// OK Status: 200
+	// Created Status: 201
+	// Unauthorized Status: 401
+}

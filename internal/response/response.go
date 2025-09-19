@@ -52,6 +52,26 @@ func (r *Responder) Write(w http.ResponseWriter, req *http.Request, data any) {
 	}
 }
 
+// writeWithStatus writes a response with a specific HTTP status code.
+// It sets the status code before calling the encoder.
+func (r *Responder) writeWithStatus(w http.ResponseWriter, req *http.Request, data any, statusCode int) {
+	if r.Before != nil {
+		r.Before(w, req, data)
+	}
+
+	w.WriteHeader(statusCode)
+	if err := r.Encoder.Encode(w, data); err != nil {
+		if r.OnError != nil {
+			r.OnError(w, req, err)
+		}
+		return
+	}
+
+	if r.After != nil {
+		r.After(w, req, data)
+	}
+}
+
 // Error handles error responses by calling the OnError hook.
 // If no OnError hook is configured, it writes a basic 500 Internal Server Error response.
 func (r *Responder) Error(w http.ResponseWriter, req *http.Request, err error) {
@@ -62,4 +82,34 @@ func (r *Responder) Error(w http.ResponseWriter, req *http.Request, err error) {
 
 	// Default error handling if no OnError hook is provided
 	http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+}
+
+// OK writes a response with HTTP 200 OK status.
+func (r *Responder) OK(w http.ResponseWriter, req *http.Request, data any) {
+	r.writeWithStatus(w, req, data, http.StatusOK)
+}
+
+// Created writes a response with HTTP 201 Created status.
+func (r *Responder) Created(w http.ResponseWriter, req *http.Request, data any) {
+	r.writeWithStatus(w, req, data, http.StatusCreated)
+}
+
+// BadRequest writes a response with HTTP 400 Bad Request status.
+func (r *Responder) BadRequest(w http.ResponseWriter, req *http.Request, data any) {
+	r.writeWithStatus(w, req, data, http.StatusBadRequest)
+}
+
+// Unauthorized writes a response with HTTP 401 Unauthorized status.
+func (r *Responder) Unauthorized(w http.ResponseWriter, req *http.Request, data any) {
+	r.writeWithStatus(w, req, data, http.StatusUnauthorized)
+}
+
+// NotFound writes a response with HTTP 404 Not Found status.
+func (r *Responder) NotFound(w http.ResponseWriter, req *http.Request, data any) {
+	r.writeWithStatus(w, req, data, http.StatusNotFound)
+}
+
+// InternalServerError writes a response with HTTP 500 Internal Server Error status.
+func (r *Responder) InternalServerError(w http.ResponseWriter, req *http.Request, data any) {
+	r.writeWithStatus(w, req, data, http.StatusInternalServerError)
 }

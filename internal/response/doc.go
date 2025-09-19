@@ -29,6 +29,32 @@ Basic Usage:
 		http.ListenAndServe(":8080", router)
 	}
 
+Using Status Code Convenience Methods:
+
+	func statusExamples() {
+		responder := response.New()
+
+		// 200 OK response
+		router.HandleFunc("/api/success", func(w http.ResponseWriter, r *http.Request) {
+			data := map[string]string{"status": "success"}
+			responder.OK(w, r, data)
+		})
+
+		// 201 Created response
+		router.HandleFunc("/api/create", func(w http.ResponseWriter, r *http.Request) {
+			data := map[string]interface{}{"id": "123", "created": true}
+			responder.Created(w, r, data)
+		}).Methods("POST")
+
+		// 401 Unauthorized response
+		router.HandleFunc("/api/protected", func(w http.ResponseWriter, r *http.Request) {
+			data := map[string]string{"error": "access denied"}
+			responder.Unauthorized(w, r, data)
+		})
+
+		// Other available methods: BadRequest, NotFound, InternalServerError
+	}
+
 Advanced Usage with Custom Hooks:
 
 	func main() {

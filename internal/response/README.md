@@ -23,6 +23,22 @@ func handler(w http.ResponseWriter, r *http.Request) {
     data := map[string]string{"message": "Hello, World!"}
     responder.Write(w, r, data)
 }
+
+// Using status code convenience methods
+func statusHandler(w http.ResponseWriter, r *http.Request) {
+    data := map[string]string{"status": "success"}
+    responder.OK(w, r, data)  // 200 OK
+}
+
+func createHandler(w http.ResponseWriter, r *http.Request) {
+    data := map[string]interface{}{"id": "123", "created": true}
+    responder.Created(w, r, data)  // 201 Created
+}
+
+func authHandler(w http.ResponseWriter, r *http.Request) {
+    data := map[string]string{"error": "access denied"}
+    responder.Unauthorized(w, r, data)  // 401 Unauthorized
+}
 ```
 
 ## API Reference
@@ -43,6 +59,15 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 - `Write(w, r, data)` - Write successful response
 - `Error(w, r, err)` - Handle error response
+
+#### Status Code Convenience Methods
+
+- `OK(w, r, data)` - Write response with 200 OK status
+- `Created(w, r, data)` - Write response with 201 Created status
+- `BadRequest(w, r, data)` - Write response with 400 Bad Request status
+- `Unauthorized(w, r, data)` - Write response with 401 Unauthorized status
+- `NotFound(w, r, data)` - Write response with 404 Not Found status
+- `InternalServerError(w, r, data)` - Write response with 500 Internal Server Error status
 
 ## Files
 

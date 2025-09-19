@@ -176,3 +176,45 @@ func TestNewConstructors(t *testing.T) {
 		t.Error("NewCustom() should provide defaults when nil is passed")
 	}
 }
+
+// Test convenience methods for status codes
+func TestResponder_StatusMethods(t *testing.T) {
+	responder := New()
+	data := map[string]string{"message": "test"}
+
+	tests := []struct {
+		name           string
+		method         func(w http.ResponseWriter, req *http.Request, data any)
+		expectedStatus int
+	}{
+		{"OK", responder.OK, http.StatusOK},
+		{"Created", responder.Created, http.StatusCreated},
+		{"BadRequest", responder.BadRequest, http.StatusBadRequest},
+		{"Unauthorized", responder.Unauthorized, http.StatusUnauthorized},
+		{"NotFound", responder.NotFound, http.StatusNotFound},
+		{"InternalServerError", responder.InternalServerError, http.StatusInternalServerError},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest("GET", "/test", nil)
+			w := httptest.NewRecorder()
+
+			tt.method(w, req, data)
+
+			if w.Code != tt.expectedStatus {
+				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
+			}
+
+			contentType := w.Header().Get("Content-Type")
+			if contentType != "application/json" {
+				t.Errorf("Expected Content-Type application/json, got %s", contentType)
+			}
+
+			body := w.Body.String()
+			if !strings.Contains(body, "test") {
+				t.Errorf("Expected response body to contain 'test', got %s", body)
+			}
+		})
+	}
+}
