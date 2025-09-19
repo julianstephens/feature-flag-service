@@ -92,5 +92,4 @@ This checklist covers major tasks required to complete the Feature Flag Service 
 **Legend:**
 
 - [x] = Implemented
-      [~] = In Progress
 - [ ] = Not Started
