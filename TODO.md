@@ -7,7 +7,7 @@ This checklist covers major tasks required to complete the Feature Flag Service 
 ## 1. Core API & Service Implementation
 
 - [ ] Implement REST API endpoints for flag CRUD (`/v1/flags`, etc.)
-- [ ] Implement gRPC API for flag service (using generated proto)
+- [x] Implement gRPC API for flag service (using generated proto)
 - [ ] Implement streaming endpoint for real-time flag updates (gRPC/WebSocket)
 - [ ] Wire up config, audit, and RBAC service skeletons
 
@@ -15,17 +15,16 @@ This checklist covers major tasks required to complete the Feature Flag Service 
 
 ## 2. Service Layer
 
-- [x] In-memory `flag.Service` implementation (for development/testing)
-- [x] etcd-backed `flag.Service` (see `internal/flag/etcd_service.go`)
-- [ ] Implement `config.Service` (etcd-backed)
-- [ ] Implement `audit.Service` (PostgreSQL-backed)
-- [ ] Implement `rbac.Service` (PostgreSQL-backed)
+- [x] Implement `flag.Service` (etcd-backend)
+- [ ] Implement `config.Service` (etcd-backend)
+- [ ] Implement `audit.Service` (PostgreSQL-backend)
+- [ ] Implement `rbac.Service` (PostgreSQL-backend)
 
 ---
 
 ## 3. Persistence Layer
 
-- [ ] Containerize etcd and Postgres (update `docker-compose.yaml`)
+- [x] Containerize etcd and Postgres (update `docker-compose.yaml`)
 - [ ] Add migration scripts for Postgres (audit, RBAC tables)
 - [ ] Add proper error handling and retries for DB interactions
 
@@ -36,28 +35,19 @@ This checklist covers major tasks required to complete the Feature Flag Service 
 - [x] Provide `cmd/api/main.go` as entrypoint (starts REST & gRPC, handles shutdown)
 - [x] Implement `internal/server/server.go` (REST/gRPC wiring)
 - [ ] Add middleware for logging, authentication, and request tracing
-- [ ] Add graceful shutdown for HTTP and gRPC servers
+- [x] Add graceful shutdown for HTTP and gRPC servers
 
 ---
 
-## 5. Logging & Observability
+## 5. Configuration & Security
 
-- [x] Shared logger package in `internal/logger/`
-- [ ] Integrate request/response logging middleware
-- [ ] Add metrics with Prometheus (optional)
-- [ ] Add OpenTelemetry/Jaeger tracing (optional)
-
----
-
-## 6. Configuration & Security
-
-- [ ] Environment variable config (document all required vars)
+- [x] Environment variable config (document all required vars)
 - [ ] JWT authentication middleware for admin endpoints
 - [ ] RBAC enforcement in API handlers
 
 ---
 
-## 7. Protobuf & OpenAPI
+## 6. Protobuf & OpenAPI
 
 - [ ] Define/complete proto files for `FlagService`, etc.
 - [ ] Generate gRPC and REST server/client stubs
@@ -65,7 +55,7 @@ This checklist covers major tasks required to complete the Feature Flag Service 
 
 ---
 
-## 8. Documentation
+## 7. Documentation
 
 - [x] Architecture and README
 - [ ] Usage examples for CLI and API
@@ -74,7 +64,7 @@ This checklist covers major tasks required to complete the Feature Flag Service 
 
 ---
 
-## 9. Testing
+## 8. Testing
 
 - [ ] Unit tests for service logic (flag, config, audit, rbac)
 - [ ] Integration tests for REST/gRPC endpoints
@@ -82,7 +72,7 @@ This checklist covers major tasks required to complete the Feature Flag Service 
 
 ---
 
-## 10. Deployment
+## 9. Deployment
 
 - [ ] Dockerfile for API service
 - [ ] `docker-compose.yaml` for local stack (API, etcd, Postgres)
@@ -91,7 +81,7 @@ This checklist covers major tasks required to complete the Feature Flag Service 
 
 ---
 
-## 11. Extensibility
+## 10. Extensibility
 
 - [ ] Design interfaces and wire for easy back-end swapping (etcd, Postgres, Consul, etc.)
 - [ ] Add hooks for real-time updates (NATS/Kafka, etc.)
