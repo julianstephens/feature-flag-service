@@ -25,11 +25,11 @@ func NewJSONEncoderWithIndent(indent string) *JSONEncoder {
 // It sets the Content-Type header to application/json.
 func (j *JSONEncoder) Encode(w http.ResponseWriter, v any) error {
 	w.Header().Set("Content-Type", "application/json")
-	
+
 	encoder := json.NewEncoder(w)
 	if j.Indent != "" {
 		encoder.SetIndent("", j.Indent)
 	}
-	
+
 	return encoder.Encode(v)
 }

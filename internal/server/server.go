@@ -35,6 +35,6 @@ type flagGRPCServer struct {
 func RegisterGRPC(grpcServer *grpc.Server, flagSvc flag.Service) {
 	ffpb.RegisterFlagServiceServer(grpcServer, &flagGRPCServer{
 		UnimplementedFlagServiceServer: ffpb.UnimplementedFlagServiceServer{},
-		svc: flagSvc,
+		svc:                            flagSvc,
 	})
 }

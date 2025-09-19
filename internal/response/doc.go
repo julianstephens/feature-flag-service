@@ -19,13 +19,13 @@ Basic Usage:
 
 	func main() {
 		responder := response.New()
-		
+
 		router := mux.NewRouter()
 		router.HandleFunc("/api/data", func(w http.ResponseWriter, r *http.Request) {
 			data := map[string]string{"message": "Hello, World!"}
 			responder.Write(w, r, data)
 		})
-		
+
 		http.ListenAndServe(":8080", router)
 	}
 
@@ -36,23 +36,23 @@ Advanced Usage with Custom Hooks:
 		beforeHook := func(w http.ResponseWriter, r *http.Request, data any) {
 			log.Printf("Processing request: %s %s", r.Method, r.URL.Path)
 		}
-		
+
 		afterHook := func(w http.ResponseWriter, r *http.Request, data any) {
 			log.Printf("Response sent for: %s %s", r.Method, r.URL.Path)
 		}
-		
+
 		errorHook := func(w http.ResponseWriter, r *http.Request, err error) {
 			log.Printf("Error in %s %s: %v", r.Method, r.URL.Path, err)
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
 		}
-		
+
 		responder := response.NewCustom(
 			response.NewJSONEncoderWithIndent("  "), // Pretty JSON
 			beforeHook,
 			afterHook,
 			errorHook,
 		)
-		
+
 		// Use responder in handlers...
 	}
 
@@ -65,7 +65,7 @@ Error Handling:
 			responder.Error(w, r, err)
 			return
 		}
-		
+
 		// Write successful response
 		responder.Write(w, r, data)
 	}

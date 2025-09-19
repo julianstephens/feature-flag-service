@@ -46,7 +46,7 @@ func NewService(conf *config.Config) Service {
 	defer etcdClient.Client.Close()
 
 	return &FlagService{
-		conf: conf,
+		conf:  conf,
 		store: etcdClient,
 	}
 }
@@ -77,7 +77,7 @@ func (s *FlagService) GetFlag(ctx context.Context, id string) (*Flag, error) {
 	if len(resp.Kvs) == 0 {
 		return nil, ErrFlagNotFound
 	}
-	
+
 	var flag Flag
 	if err := json.Unmarshal(resp.Kvs[0].Value, &flag); err != nil {
 		return nil, err
@@ -96,7 +96,7 @@ func (s *FlagService) CreateFlag(ctx context.Context, name, description string, 
 		CreatedAt:   now,
 		UpdatedAt:   now,
 	}
-	
+
 	data, err := json.Marshal(flag)
 	if err != nil {
 		return nil, err
@@ -115,7 +115,7 @@ func (s *FlagService) UpdateFlag(ctx context.Context, id, name, description stri
 	if err != nil {
 		return nil, err
 	}
-	
+
 	flag.Name = name
 	flag.Description = description
 	flag.Enabled = enabled
@@ -125,7 +125,7 @@ func (s *FlagService) UpdateFlag(ctx context.Context, id, name, description stri
 	if err != nil {
 		return nil, err
 	}
-	
+
 	_, err = s.store.Client.Put(ctx, s.store.GetKey(id), string(data))
 	if err != nil {
 		return nil, err

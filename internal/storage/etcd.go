@@ -6,10 +6,9 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
-
 type EtcdClient struct {
-	Client *clientv3.Client
-	KeyPrefix string	
+	Client    *clientv3.Client
+	KeyPrefix string
 }
 
 func NewEtcdClient(endpoints []string, keyPrefix string) (*EtcdClient, error) {
@@ -23,7 +22,7 @@ func NewEtcdClient(endpoints []string, keyPrefix string) (*EtcdClient, error) {
 	}
 
 	return &EtcdClient{
-		Client: client,
+		Client:    client,
 		KeyPrefix: keyPrefix,
 	}, nil
 }

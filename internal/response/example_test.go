@@ -69,9 +69,9 @@ func ExampleNewCustom() {
 	// Create a responder with custom pretty-printed JSON
 	responder := response.NewCustom(
 		response.NewJSONEncoderWithIndent("  "), // Pretty JSON
-		nil, // Use default Before hook
-		nil, // Use default After hook  
-		nil, // Use default OnError hook
+		nil,                                     // Use default Before hook
+		nil,                                     // Use default After hook
+		nil,                                     // Use default OnError hook
 	)
 
 	handler := func(w http.ResponseWriter, r *http.Request) {
