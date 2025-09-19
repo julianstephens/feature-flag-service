@@ -6,7 +6,7 @@ This checklist covers major tasks required to complete the Feature Flag Service 
 
 ## 1. Core API & Service Implementation
 
-- [ ] Implement REST API endpoints for flag CRUD (`/v1/flags`, etc.)
+- [x] Implement REST API endpoints for flag CRUD (`/v1/flags`, etc.)
 - [x] Implement gRPC API for flag service (using generated proto)
 - [ ] Implement streaming endpoint for real-time flag updates (gRPC/WebSocket)
 - [ ] Wire up config, audit, and RBAC service skeletons
@@ -25,7 +25,7 @@ This checklist covers major tasks required to complete the Feature Flag Service 
 ## 3. Persistence Layer
 
 - [x] Containerize etcd and Postgres (update `docker-compose.yaml`)
-- [ ] Add migration scripts for Postgres (audit, RBAC tables)
+- [x] Add migration scripts for Postgres (audit, RBAC tables)
 - [ ] Add proper error handling and retries for DB interactions
 
 ---
@@ -49,10 +49,10 @@ This checklist covers major tasks required to complete the Feature Flag Service 
 
 ## 6. Protobuf & OpenAPI
 
-[~] Define/complete proto files for `FlagService`, etc.
+[x] Define/complete proto files for `FlagService`, etc.
 
-- [ ] Generate gRPC and REST server/client stubs
-- [ ] Provide OpenAPI spec for HTTP API
+- [x] Generate gRPC and REST server/client stubs
+- [x] Provide OpenAPI spec for HTTP API
 
 ---
 
@@ -61,7 +61,7 @@ This checklist covers major tasks required to complete the Feature Flag Service 
 - [x] Architecture and README
 - [ ] Usage examples for CLI and API
 - [ ] Document environment setup and local development (`docs/`)
-- [ ] Example CLI tool or scripts for flag CRUD
+- [x] Example CLI tool or scripts for flag CRUD
 
 ---
 

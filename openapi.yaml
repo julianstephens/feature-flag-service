@@ -1,0 +1,1099 @@
+openapi: 3.0.3
+info:
+  title: Feature Flag Service API
+  description: |
+    A comprehensive Feature Flag Service providing REST API endpoints for managing feature flags, 
+    configurations, audit logs, and role-based access control (RBAC).
+    
+    ## Architecture
+    - **REST API**: HTTP endpoints for all operations
+    - **gRPC API**: High-performance interface for client integration  
+    - **etcd**: Stores flag state for low-latency access
+    - **PostgreSQL**: Stores configuration, audit logs, and RBAC data
+    
+    ## Authentication
+    JWT authentication required for admin endpoints with RBAC enforcement.
+  version: 1.0.0
+  contact:
+    name: Feature Flag Service
+    url: https://github.com/julianstephens/feature-flag-service
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local development server
+  - url: https://api.featureflags.example.com/api/v1
+    description: Production server
+
+paths:
+  /checkhealth:
+    get:
+      summary: Health check endpoint
+      description: Returns the health status and version information of the service
+      operationId: checkHealth
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "OK"
+                  version:
+                    type: string
+                    example: "1.0"
+                  name:
+                    type: string
+                    example: "Feature Flag Service"
+
+  /flags:
+    get:
+      summary: List all feature flags
+      description: Retrieve a list of all feature flags in the system
+      operationId: listFlags
+      tags:
+        - Flags
+      responses:
+        '200':
+          description: List of feature flags
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Flag'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    
+    post:
+      summary: Create a new feature flag
+      description: Create a new feature flag with the specified properties
+      operationId: createFlag
+      tags:
+        - Flags
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFlagRequest'
+      responses:
+        '201':
+          description: Feature flag created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Flag'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /flags/{flagId}:
+    parameters:
+      - name: flagId
+        in: path
+        required: true
+        description: Unique identifier of the feature flag
+        schema:
+          type: string
+          example: "flag-123e4567-e89b-12d3-a456-426614174000"
+
+    get:
+      summary: Get a specific feature flag
+      description: Retrieve details of a specific feature flag by its ID
+      operationId: getFlag
+      tags:
+        - Flags
+      responses:
+        '200':
+          description: Feature flag details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Flag'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      summary: Update a feature flag
+      description: Update an existing feature flag with new properties
+      operationId: updateFlag
+      tags:
+        - Flags
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateFlagRequest'
+      responses:
+        '200':
+          description: Feature flag updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Flag'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      summary: Delete a feature flag
+      description: Permanently delete a feature flag from the system
+      operationId: deleteFlag
+      tags:
+        - Flags
+      responses:
+        '204':
+          description: Feature flag deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /config:
+    get:
+      summary: List configuration entries
+      description: Retrieve all configuration entries
+      operationId: listConfigs
+      tags:
+        - Configuration
+      responses:
+        '200':
+          description: List of configuration entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ConfigEntry'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      summary: Create configuration entry
+      description: Create a new configuration entry
+      operationId: createConfig
+      tags:
+        - Configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateConfigRequest'
+      responses:
+        '201':
+          description: Configuration entry created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigEntry'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /config/{configId}:
+    parameters:
+      - name: configId
+        in: path
+        required: true
+        description: Unique identifier of the configuration entry
+        schema:
+          type: string
+
+    get:
+      summary: Get configuration entry
+      description: Retrieve a specific configuration entry by ID
+      operationId: getConfig
+      tags:
+        - Configuration
+      responses:
+        '200':
+          description: Configuration entry details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigEntry'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      summary: Update configuration entry
+      description: Update an existing configuration entry
+      operationId: updateConfig
+      tags:
+        - Configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateConfigRequest'
+      responses:
+        '200':
+          description: Configuration entry updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigEntry'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      summary: Delete configuration entry
+      description: Delete a configuration entry
+      operationId: deleteConfig
+      tags:
+        - Configuration
+      responses:
+        '204':
+          description: Configuration entry deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /audit:
+    get:
+      summary: List audit logs
+      description: Retrieve audit logs with optional filtering
+      operationId: listAuditLogs
+      tags:
+        - Audit
+      parameters:
+        - name: flagId
+          in: query
+          description: Filter by flag ID
+          schema:
+            type: string
+        - name: userId
+          in: query
+          description: Filter by user ID
+          schema:
+            type: string
+        - name: action
+          in: query
+          description: Filter by action type
+          schema:
+            type: string
+            enum: [create, update, delete, read]
+        - name: limit
+          in: query
+          description: Maximum number of records to return
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+        - name: offset
+          in: query
+          description: Number of records to skip
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: List of audit log entries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  logs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditLog'
+                  total:
+                    type: integer
+                    description: Total number of records
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /audit/{auditId}:
+    parameters:
+      - name: auditId
+        in: path
+        required: true
+        description: Unique identifier of the audit log entry
+        schema:
+          type: string
+
+    get:
+      summary: Get audit log entry
+      description: Retrieve a specific audit log entry by ID
+      operationId: getAuditLog
+      tags:
+        - Audit
+      responses:
+        '200':
+          description: Audit log entry details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLog'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /rbac/roles:
+    get:
+      summary: List roles
+      description: Retrieve all roles in the RBAC system
+      operationId: listRoles
+      tags:
+        - RBAC
+      responses:
+        '200':
+          description: List of roles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      summary: Create role
+      description: Create a new role
+      operationId: createRole
+      tags:
+        - RBAC
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoleRequest'
+      responses:
+        '201':
+          description: Role created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /rbac/roles/{roleId}:
+    parameters:
+      - name: roleId
+        in: path
+        required: true
+        description: Unique identifier of the role
+        schema:
+          type: string
+
+    get:
+      summary: Get role
+      description: Retrieve a specific role by ID
+      operationId: getRole
+      tags:
+        - RBAC
+      responses:
+        '200':
+          description: Role details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      summary: Update role
+      description: Update an existing role
+      operationId: updateRole
+      tags:
+        - RBAC
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRoleRequest'
+      responses:
+        '200':
+          description: Role updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      summary: Delete role
+      description: Delete a role
+      operationId: deleteRole
+      tags:
+        - RBAC
+      responses:
+        '204':
+          description: Role deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /rbac/users:
+    get:
+      summary: List users
+      description: Retrieve all users in the RBAC system
+      operationId: listUsers
+      tags:
+        - RBAC
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      summary: Create user
+      description: Create a new user
+      operationId: createUser
+      tags:
+        - RBAC
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /rbac/users/{userId}:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        description: Unique identifier of the user
+        schema:
+          type: string
+
+    get:
+      summary: Get user
+      description: Retrieve a specific user by ID
+      operationId: getUser
+      tags:
+        - RBAC
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      summary: Update user
+      description: Update an existing user
+      operationId: updateUser
+      tags:
+        - RBAC
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      summary: Delete user
+      description: Delete a user
+      operationId: deleteUser
+      tags:
+        - RBAC
+      responses:
+        '204':
+          description: User deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /rbac/users/{userId}/roles:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        description: Unique identifier of the user
+        schema:
+          type: string
+
+    get:
+      summary: Get user roles
+      description: Retrieve all roles assigned to a specific user
+      operationId: getUserRoles
+      tags:
+        - RBAC
+      responses:
+        '200':
+          description: List of user roles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      summary: Assign role to user
+      description: Assign a role to a user
+      operationId: assignRoleToUser
+      tags:
+        - RBAC
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - roleId
+              properties:
+                roleId:
+                  type: string
+                  description: ID of the role to assign
+      responses:
+        '201':
+          description: Role assigned successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /rbac/users/{userId}/roles/{roleId}:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        description: Unique identifier of the user
+        schema:
+          type: string
+      - name: roleId
+        in: path
+        required: true
+        description: Unique identifier of the role
+        schema:
+          type: string
+
+    delete:
+      summary: Remove role from user
+      description: Remove a role assignment from a user
+      operationId: removeRoleFromUser
+      tags:
+        - RBAC
+      responses:
+        '204':
+          description: Role removed successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  schemas:
+    Flag:
+      type: object
+      required:
+        - id
+        - name
+        - enabled
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the feature flag
+          example: "flag-123e4567-e89b-12d3-a456-426614174000"
+        name:
+          type: string
+          description: Human-readable name of the feature flag
+          example: "new-checkout-flow"
+        description:
+          type: string
+          description: Description of what this feature flag controls
+          example: "Enables the new checkout flow with improved UX"
+        enabled:
+          type: boolean
+          description: Whether the feature flag is currently enabled
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the flag was created
+          example: "2023-12-01T10:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the flag was last updated
+          example: "2023-12-01T15:30:00Z"
+
+    CreateFlagRequest:
+      type: object
+      required:
+        - name
+        - enabled
+      properties:
+        name:
+          type: string
+          description: Human-readable name of the feature flag
+          example: "new-checkout-flow"
+        description:
+          type: string
+          description: Description of what this feature flag controls
+          example: "Enables the new checkout flow with improved UX"
+        enabled:
+          type: boolean
+          description: Initial state of the feature flag
+          example: false
+
+    UpdateFlagRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Updated name of the feature flag
+          example: "enhanced-checkout-flow"
+        description:
+          type: string
+          description: Updated description of the feature flag
+          example: "Enhanced checkout flow with A/B testing support"
+        enabled:
+          type: boolean
+          description: Updated state of the feature flag
+          example: true
+
+    ConfigEntry:
+      type: object
+      required:
+        - id
+        - key
+        - value
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the configuration entry
+          example: "config-123e4567-e89b-12d3-a456-426614174000"
+        key:
+          type: string
+          description: Configuration key
+          example: "max_connections"
+        value:
+          type: string
+          description: Configuration value
+          example: "100"
+        description:
+          type: string
+          description: Description of the configuration entry
+          example: "Maximum number of database connections"
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the config was created
+          example: "2023-12-01T10:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the config was last updated
+          example: "2023-12-01T15:30:00Z"
+
+    CreateConfigRequest:
+      type: object
+      required:
+        - key
+        - value
+      properties:
+        key:
+          type: string
+          description: Configuration key
+          example: "max_connections"
+        value:
+          type: string
+          description: Configuration value
+          example: "100"
+        description:
+          type: string
+          description: Description of the configuration entry
+          example: "Maximum number of database connections"
+
+    UpdateConfigRequest:
+      type: object
+      properties:
+        key:
+          type: string
+          description: Updated configuration key
+          example: "max_connections"
+        value:
+          type: string
+          description: Updated configuration value
+          example: "150"
+        description:
+          type: string
+          description: Updated description of the configuration entry
+          example: "Maximum number of database connections (updated)"
+
+    AuditLog:
+      type: object
+      required:
+        - id
+        - userId
+        - action
+        - resourceType
+        - resourceId
+        - timestamp
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the audit log entry
+          example: "audit-123e4567-e89b-12d3-a456-426614174000"
+        userId:
+          type: string
+          description: ID of the user who performed the action
+          example: "user-456e7890-e89b-12d3-a456-426614174000"
+        action:
+          type: string
+          enum: [create, update, delete, read]
+          description: Action performed
+          example: "update"
+        resourceType:
+          type: string
+          description: Type of resource affected
+          example: "flag"
+        resourceId:
+          type: string
+          description: ID of the resource affected
+          example: "flag-123e4567-e89b-12d3-a456-426614174000"
+        changes:
+          type: object
+          description: JSON object containing the changes made
+          example: {"enabled": {"old": false, "new": true}}
+        timestamp:
+          type: string
+          format: date-time
+          description: When the action was performed
+          example: "2023-12-01T15:30:00Z"
+        userAgent:
+          type: string
+          description: User agent of the client that made the request
+          example: "curl/7.68.0"
+        ipAddress:
+          type: string
+          description: IP address of the client
+          example: "192.168.1.100"
+
+    Role:
+      type: object
+      required:
+        - id
+        - name
+        - permissions
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the role
+          example: "role-123e4567-e89b-12d3-a456-426614174000"
+        name:
+          type: string
+          description: Human-readable name of the role
+          example: "admin"
+        description:
+          type: string
+          description: Description of the role
+          example: "Administrator with full access"
+        permissions:
+          type: array
+          items:
+            type: string
+          description: List of permissions granted to this role
+          example: ["flags:read", "flags:write", "config:read", "config:write", "audit:read", "rbac:read", "rbac:write"]
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the role was created
+          example: "2023-12-01T10:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the role was last updated
+          example: "2023-12-01T15:30:00Z"
+
+    CreateRoleRequest:
+      type: object
+      required:
+        - name
+        - permissions
+      properties:
+        name:
+          type: string
+          description: Human-readable name of the role
+          example: "developer"
+        description:
+          type: string
+          description: Description of the role
+          example: "Developer with read-only access to flags"
+        permissions:
+          type: array
+          items:
+            type: string
+          description: List of permissions to grant to this role
+          example: ["flags:read", "config:read"]
+
+    UpdateRoleRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Updated name of the role
+          example: "senior-developer"
+        description:
+          type: string
+          description: Updated description of the role
+          example: "Senior developer with write access to flags"
+        permissions:
+          type: array
+          items:
+            type: string
+          description: Updated list of permissions
+          example: ["flags:read", "flags:write", "config:read"]
+
+    User:
+      type: object
+      required:
+        - id
+        - username
+        - email
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the user
+          example: "user-123e4567-e89b-12d3-a456-426614174000"
+        username:
+          type: string
+          description: Username for the user
+          example: "john.doe"
+        email:
+          type: string
+          format: email
+          description: Email address of the user
+          example: "john.doe@example.com"
+        fullName:
+          type: string
+          description: Full name of the user
+          example: "John Doe"
+        active:
+          type: boolean
+          description: Whether the user account is active
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the user was created
+          example: "2023-12-01T10:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the user was last updated
+          example: "2023-12-01T15:30:00Z"
+
+    CreateUserRequest:
+      type: object
+      required:
+        - username
+        - email
+      properties:
+        username:
+          type: string
+          description: Username for the new user
+          example: "jane.smith"
+        email:
+          type: string
+          format: email
+          description: Email address of the new user
+          example: "jane.smith@example.com"
+        fullName:
+          type: string
+          description: Full name of the new user
+          example: "Jane Smith"
+        active:
+          type: boolean
+          description: Whether the user account should be active
+          default: true
+          example: true
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          description: Updated username
+          example: "jane.doe"
+        email:
+          type: string
+          format: email
+          description: Updated email address
+          example: "jane.doe@example.com"
+        fullName:
+          type: string
+          description: Updated full name
+          example: "Jane Doe"
+        active:
+          type: boolean
+          description: Updated active status
+          example: false
+
+    Error:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Resource not found"
+        code:
+          type: string
+          description: Error code for programmatic handling
+          example: "RESOURCE_NOT_FOUND"
+        details:
+          type: object
+          description: Additional error details
+          example: {"resource": "flag", "id": "flag-123"}
+
+  responses:
+    BadRequest:
+      description: Bad request - invalid input parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            message: "Invalid input parameters"
+            code: "BAD_REQUEST"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            message: "Resource not found"
+            code: "NOT_FOUND"
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            message: "An internal server error occurred"
+            code: "INTERNAL_SERVER_ERROR"
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token for authentication
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Health
+    description: Health check operations
+  - name: Flags
+    description: Feature flag management operations
+  - name: Configuration
+    description: Configuration management operations
+  - name: Audit
+    description: Audit log operations
+  - name: RBAC
+    description: Role-based access control operations
