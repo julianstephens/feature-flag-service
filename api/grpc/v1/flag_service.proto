@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+option go_package = "featureflag.v1";
+
+service FlagService {
+  rpc CreateFlag(CreateFlagRequest) returns (Flag) {}
+  rpc UpdateFlag(UpdateFlagRequest) returns (Flag) {}
+  rpc GetFlag(GetFlagRequest) returns (Flag) {}
+  rpc DeleteFlag(DeleteFlagRequest) returns (DeleteFlagResponse) {}
+  rpc ListFlags(ListFlagsRequest) returns (ListFlagsResponse) {}
+  rpc StreamFlags(StreamFlagsRequest) returns (stream FlagUpdate) {}
+}
+
+message CreateFlagRequest {
+  string name = 1;
+  string description = 2;
+  bool enabled = 3;
+}
+
+message UpdateFlagRequest {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  bool enabled = 4;
+}
+
+message GetFlagRequest {
+  string id = 1;
+}
+
+message DeleteFlagRequest {
+  string id = 1;
+}
+
+message DeleteFlagResponse {}
+
+message ListFlagsRequest {}
+
+message ListFlagsResponse {
+  repeated Flag flags = 1;
+}
+
+message StreamFlagsRequest {}
+
+message FlagUpdate {
+  Flag flag = 1;
+  string action = 2; // created, updated, deleted
+}
+
+message Flag {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  bool enabled = 4;
+  string created_at = 5;
+  string updated_at = 6;
+}

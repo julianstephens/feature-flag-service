@@ -1,0 +1,121 @@
+openapi: 3.1.1
+info:
+  title: Feature Flag & Config API
+  version: '1.0'
+servers:
+  - url: https://api.featureflags.example.com/v1
+paths:
+  /flags:
+    post:
+      summary: Create a new feature flag
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FlagCreateRequest'
+      responses:
+        '201':
+          description: Flag created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Flag'
+    get:
+      summary: List all feature flags
+      responses:
+        '200':
+          description: A list of feature flags
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Flag'
+  /flags/{flag_id}:
+    get:
+      summary: Get details of a feature flag
+      parameters:
+        - in: path
+          name: flag_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Flag details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Flag'
+    patch:
+      summary: Update a feature flag
+      parameters:
+        - in: path
+          name: flag_id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FlagUpdateRequest'
+      responses:
+        '200':
+          description: Flag updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Flag'
+    delete:
+      summary: Delete a feature flag
+      parameters:
+        - in: path
+          name: flag_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Flag deleted
+components:
+  schemas:
+    Flag:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        enabled:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    FlagCreateRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        enabled:
+          type: boolean
+    FlagUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        enabled:
+          type: boolean
