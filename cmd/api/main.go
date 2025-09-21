@@ -10,6 +10,7 @@ import (
 
 	"google.golang.org/grpc"
 
+	"github.com/julianstephens/feature-flag-service/internal/auth"
 	"github.com/julianstephens/feature-flag-service/internal/config"
 	"github.com/julianstephens/feature-flag-service/internal/flag"
 	"github.com/julianstephens/feature-flag-service/internal/server"
@@ -24,10 +25,11 @@ func main() {
 	}
 	defer etcdClient.Client.Close()
 	flagService := flag.NewService(conf, etcdClient)
+	authService := auth.NewAuthClient(conf)
 
 	go func() {
 		log.Printf("Starting REST API on :%s...", conf.HTTPPort)
-		if err := server.StartREST(":" + conf.HTTPPort, conf, flagService); err != nil && err != http.ErrServerClosed {
+		if err := server.StartREST(":" + conf.HTTPPort, conf, flagService, authService); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("REST server error: %v", err)
 		}
 	}()

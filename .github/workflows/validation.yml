@@ -9,5 +9,5 @@ permissions:
 
 jobs:
   validation:
-    uses: julianstephens/go-utils/.github/workflows/validation.yml@v0.1.4
+    uses: julianstephens/go-utils/.github/workflows/validation.yml@main
 

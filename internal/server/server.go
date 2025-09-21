@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -11,8 +12,10 @@ import (
 	"google.golang.org/grpc"
 
 	ffpb "github.com/julianstephens/feature-flag-service/gen/go/grpc/v1/featureflag.v1"
+	"github.com/julianstephens/feature-flag-service/internal/auth"
 	"github.com/julianstephens/feature-flag-service/internal/config"
 	"github.com/julianstephens/feature-flag-service/internal/flag"
+	"github.com/julianstephens/go-utils/httputil/middleware"
 	"github.com/julianstephens/go-utils/httputil/request"
 	"github.com/julianstephens/go-utils/httputil/response"
 )
@@ -23,8 +26,17 @@ const (
 )
 
 func StartREST(addr string, conf *config.Config, services ...any) error {
-	responder := response.NewWithLogging()
+	logger := log.New(os.Stdout, "[HTTP] ", log.LstdFlags)
+	errorLogger := log.New(os.Stderr, "[ERROR] ", log.LstdFlags)
+
+	responder := response.New()
+
 	router := mux.NewRouter()
+	router.Use(middleware.RequestID())
+	router.Use(middleware.Logging(logger))
+	router.Use(middleware.Recovery(errorLogger))
+	router.Use(middleware.CORS(middleware.DefaultCORSConfig()))
+
 	apiGrp := router.PathPrefix("/api/"+conf.APIVersion).Subrouter()
 	apiGrp.HandleFunc("/checkhealth", func(w http.ResponseWriter, r *http.Request) {
 		responder.OK(w, r, map[string]string{"status": "OK", "version": "1.0", "name": "Feature Flag Service"})
@@ -35,6 +47,8 @@ func StartREST(addr string, conf *config.Config, services ...any) error {
 		switch s := svc.(type) {
 		case flag.Service:
 			servicesMap["flagService"] = s
+		case *auth.AuthClient:
+			servicesMap["authService"] = s
 		// case config.Service: --- IGNORE ---
 		// 	servicesMap["configService"] = s --- IGNORE ---
 		// case audit.Service: --- IGNORE ---
@@ -144,12 +158,12 @@ func RegisterGRPC(grpcServer *grpc.Server, flagSvc flag.Service) {
 func handleError(responder *response.Responder, w http.ResponseWriter, r *http.Request, err error) {
 	switch err {
 	case context.Canceled:
-		responder.Error(w, r, err)
+		responder.ErrorWithStatus(w, r, http.StatusRequestTimeout, err)
 	case context.DeadlineExceeded:
-		responder.Error(w, r, err)
+		responder.ErrorWithStatus(w, r, http.StatusRequestTimeout, err)
 	case rpctypes.ErrEmptyKey:
 		responder.BadRequest(w, r, err)
 	default:
-		responder.Error(w, r, err)
+		responder.InternalServerError(w, r, err)
 	}
 }

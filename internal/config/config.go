@@ -13,6 +13,9 @@ type Config struct {
 	PostgresURL       string `envconfig:"POSTGRES_URL"`
 	FlagServicePrefix string `envconfig:"FLAG_SERVICE_PREFIX" default:"/featureflags/"`
 	APIVersion        string `envconfig:"API_VERSION" default:"v1"`
+	JWTSecret         string `envconfig:"JWT_SECRET" default:"supersecret"`
+	JWTExpiry         int    `envconfig:"JWT_EXPIRY" default:"3600"`
+	JWTIssuer         string `envconfig:"JWT_ISSUER" default:"feature-flag-service"`
 }
 
 func LoadConfig() *Config {

@@ -35,7 +35,7 @@ func NewPostgresStore(opts PostgresOption) *PostgresStore {
 	}
 }
 
-func Connect() error {
+func (s *PostgresStore) Connect() error {
 	var err error
 	once.Do(func() {
 		conf := config.LoadConfig()
@@ -48,7 +48,7 @@ func Connect() error {
 	return err
 }
 
-func Close() error {
+func (s *PostgresStore) Close() error {
 	if dbConn != nil {
 		return dbConn.Close(context.Background())
 	}
@@ -58,7 +58,7 @@ func Close() error {
 
 func (s *PostgresStore) List(ctx context.Context, prefix string, opts ...any) (map[string]string, error) {
 	if dbConn == nil {
-		if err := Connect(); err != nil {
+		if err := s.Connect(); err != nil {
 			return nil, err
 		}
 	}
@@ -93,18 +93,34 @@ func (s *PostgresStore) List(ctx context.Context, prefix string, opts ...any) (m
 	return result, nil
 }
 
-func Get(ctx context.Context, prefix string, opts ...any) (string, error) {
+func (s *PostgresStore) Get(ctx context.Context, key string, opts ...any) (string, error) {
+	if dbConn == nil {
+		if err := s.Connect(); err != nil {
+			return "", err
+		}
+	}
+	
+	query := "SELECT " + strings.Join(s.Columns, ",") + " FROM " + s.TableName + " WHERE " + s.IdxKey + "=$1"
+	row := dbConn.QueryRow(ctx, query, key)
+
+	var result string
+	if err := row.Scan(&result); err != nil {
+		if err == pgx.ErrNoRows {
+			return "", ErrKeyNotFound
+		}
+		return "", err
+	}
+	return result, nil
+}
+
+func (s *PostgresStore) Post(ctx context.Context, key, value string, opts ...any) (string, error) {
 	return "", nil
 }
 
-func Post(ctx context.Context, prefix string, opts ...any) (string, error) {
+func (s *PostgresStore) Put(ctx context.Context, key, value string, opts ...any) (string, error) {
 	return "", nil
 }
 
-func Put(ctx context.Context, prefix string, opts ...any) (string, error) {
-	return "", nil
-}
-
-func Delete(ctx context.Context, prefix string, opts ...any) error {
+func (s *PostgresStore) Delete(ctx context.Context, key string, opts ...any) error {
 	return nil
 }
