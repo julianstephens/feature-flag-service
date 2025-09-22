@@ -19,4 +19,7 @@ revision: ## Create a new database migration
 
 seed: ## Seed the database with initial data
 	@echo "Seeding the database..."
-	@go run migrations/seeder.go
+	@go build -o bin/seeder cmd/seed/main.go
+	@chmod +x bin/seeder
+	@./bin/seeder --db ${DB_URL}
+	@rm -f bin/seeder

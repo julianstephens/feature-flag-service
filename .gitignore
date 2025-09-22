@@ -2,3 +2,4 @@ gen/**/*.go
 .env*
 tmp
 .vscode
+bin
