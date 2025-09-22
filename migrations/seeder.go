@@ -20,6 +20,20 @@ var defaultRoles = []struct {
 	{"user", "Can read feature flags and config, but not modify.", uuid.New().String()},
 }
 
+var defaultPermissions = []struct {
+	Name        string
+	Description string
+}{
+	{"flags.read", "Read feature flags"},
+	{"flags.write", "Create or update feature flags"},
+	{"flags.delete", "Delete feature flags"},
+	{"config.read", "Read configuration values"},
+	{"config.write", "Update configuration values"},
+	{"audit.read", "Read audit logs"},
+	{"rbac.read", "Read RBAC users and roles"},
+	{"rbac.write", "Modify RBAC users and roles"},
+}
+
 func main() {
 	dbURL := os.Getenv("POSTGRES_URL")
 	if dbURL == "" {
@@ -34,6 +48,13 @@ func main() {
 	}
 	defer conn.Close(context.Background())
 
+	seedRoles(conn)
+	seedPermissions(conn)
+
+	fmt.Println("Seeding complete.")
+}
+
+func seedRoles(conn *pgx.Conn) {
 	for _, role := range defaultRoles {
 		var exists bool
 		err := conn.QueryRow(
@@ -60,5 +81,33 @@ func main() {
 			fmt.Printf("Role already exists: %s\n", role.Name)
 		}
 	}
-	fmt.Println("Seeding complete.")
+}
+
+func seedPermissions(conn *pgx.Conn) {
+	for _, perm := range defaultPermissions {
+		var exists bool
+		err := conn.QueryRow(
+			context.Background(),
+			`SELECT EXISTS(SELECT 1 FROM rbac_permissions WHERE name=$1)`, perm.Name,
+		).Scan(&exists)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to check permission existence: %v\n", err)
+			os.Exit(1)
+		}
+		if !exists {
+			_, err = conn.Exec(
+				context.Background(),
+				`INSERT INTO rbac_permissions (name, description)
+				VALUES ($1, $2)`,
+				perm.Name, perm.Description,
+			)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Failed to insert permission %q: %v\n", perm.Name, err)
+				os.Exit(1)
+			}
+			fmt.Printf("Inserted permission: %s\n", perm.Name)
+		} else {
+			fmt.Printf("Permission already exists: %s\n", perm.Name)
+		}
+	}
 }
