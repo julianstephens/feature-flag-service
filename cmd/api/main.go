@@ -29,7 +29,7 @@ func main() {
 
 	go func() {
 		log.Printf("Starting REST API on :%s...", conf.HTTPPort)
-		if err := server.StartREST(":" + conf.HTTPPort, conf, flagService, authService); err != nil && err != http.ErrServerClosed {
+		if err := server.StartREST(":"+conf.HTTPPort, conf, flagService, authService); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("REST server error: %v", err)
 		}
 	}()

@@ -8,7 +8,6 @@ import (
 	"github.com/julianstephens/go-utils/httputil/response"
 )
 
-
 func LoginHandler(authSvc *AuthClient, rbacUserService *users.RbacUserService, responder *response.Responder) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req LoginRequest
@@ -27,7 +26,6 @@ func LoginHandler(authSvc *AuthClient, rbacUserService *users.RbacUserService, r
 		// 	responder.Unauthorized(w, r, err)
 		// 	return
 		// }
-
 
 		// token, err := authSvc.GenerateToken(req.UserID, req.Username, req.Email, req.Roles, &req.CustomClaims)
 		// if err != nil {

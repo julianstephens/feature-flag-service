@@ -18,10 +18,10 @@ import (
 var ErrFlagNotFound = errors.New("flag not found")
 
 type Flag struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Enabled     bool `json:"enabled"`
+	ID          string    `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	Enabled     bool      `json:"enabled"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
@@ -35,15 +35,15 @@ type Service interface {
 }
 
 type FlagService struct {
-	conf  *config.Config
-	store storage.Store[clientv3.OpOption]
+	conf   *config.Config
+	store  storage.Store[clientv3.OpOption]
 	prefix string
 }
 
 func NewService(conf *config.Config, etcdClient *storage.EtcdStore) Service {
 	return &FlagService{
-		conf:  conf,
-		store: etcdClient,
+		conf:   conf,
+		store:  etcdClient,
 		prefix: conf.FlagServicePrefix,
 	}
 }

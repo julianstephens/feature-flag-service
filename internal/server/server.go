@@ -20,7 +20,6 @@ import (
 	"github.com/julianstephens/go-utils/httputil/response"
 )
 
-
 const (
 	DEFAULT_TIMEOUT = 30 * time.Second
 )
@@ -37,7 +36,7 @@ func StartREST(addr string, conf *config.Config, services ...any) error {
 	router.Use(middleware.Recovery(errorLogger))
 	router.Use(middleware.CORS(middleware.DefaultCORSConfig()))
 
-	apiGrp := router.PathPrefix("/api/"+conf.APIVersion).Subrouter()
+	apiGrp := router.PathPrefix("/api/" + conf.APIVersion).Subrouter()
 	apiGrp.HandleFunc("/checkhealth", func(w http.ResponseWriter, r *http.Request) {
 		responder.OK(w, r, map[string]string{"status": "OK", "version": "1.0", "name": "Feature Flag Service"})
 	})
@@ -60,7 +59,6 @@ func StartREST(addr string, conf *config.Config, services ...any) error {
 		}
 	}
 
-	
 	flagSvc := servicesMap["flagService"].(flag.Service)
 	flags := apiGrp.PathPrefix("/flags").Subrouter()
 	flags.HandleFunc("", func(w http.ResponseWriter, r *http.Request) {
@@ -117,7 +115,7 @@ func StartREST(addr string, conf *config.Config, services ...any) error {
 			responder.BadRequest(w, r, err)
 			return
 		}
-		
+
 		res, err := flagSvc.UpdateFlag(ctx, flagKey, req.Name, req.Description, req.Enabled)
 		if err != nil {
 			handleError(responder, w, r, err)

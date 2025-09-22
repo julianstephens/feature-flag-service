@@ -1,6 +1,5 @@
 package rbac
 
-
 type RbacRole struct {
 	ID          string   `json:"id"`
 	Name        string   `json:"name"`
@@ -9,8 +8,8 @@ type RbacRole struct {
 }
 
 type RbacUser struct {
-	ID       string   `json:"id"`
-	Email    string   `json:"email"`
-	Name     string   `json:"name"`
-	CreatedAt string   `json:"created_at"`
+	ID        string `json:"id"`
+	Email     string `json:"email"`
+	Name      string `json:"name"`
+	CreatedAt string `json:"created_at"`
 }

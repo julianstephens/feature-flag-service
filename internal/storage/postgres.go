@@ -22,9 +22,9 @@ type PostgresStore struct {
 }
 
 type PostgresOption struct {
-	TableName   string
-	Columns     []string
-	IdxKey      string
+	TableName string
+	Columns   []string
+	IdxKey    string
 }
 
 func NewPostgresStore(opts PostgresOption) *PostgresStore {
@@ -54,7 +54,6 @@ func (s *PostgresStore) Close() error {
 	}
 	return nil
 }
-
 
 func (s *PostgresStore) List(ctx context.Context, prefix string, opts ...any) (map[string]string, error) {
 	if dbConn == nil {
@@ -99,7 +98,7 @@ func (s *PostgresStore) Get(ctx context.Context, key string, opts ...any) (strin
 			return "", err
 		}
 	}
-	
+
 	query := "SELECT " + strings.Join(s.Columns, ",") + " FROM " + s.TableName + " WHERE " + s.IdxKey + "=$1"
 	row := dbConn.QueryRow(ctx, query, key)
 

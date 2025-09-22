@@ -9,15 +9,14 @@ import (
 )
 
 type AuthClient struct {
-	issuer string
+	issuer  string
 	manager *authutils.JWTManager
 }
 
-
 func NewAuthClient(conf *config.Config) *AuthClient {
 	return &AuthClient{
-		issuer: conf.JWTIssuer,
-		manager: authutils.NewJWTManager(conf.JWTSecret, time.Duration(conf.JWTExpiry) * time.Second, conf.JWTIssuer),
+		issuer:  conf.JWTIssuer,
+		manager: authutils.NewJWTManager(conf.JWTSecret, time.Duration(conf.JWTExpiry)*time.Second, conf.JWTIssuer),
 	}
 }
 

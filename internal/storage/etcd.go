@@ -46,7 +46,7 @@ func (e *EtcdStore) List(ctx context.Context, key string, opts ...clientv3.OpOpt
 	if len(resp.Kvs) == 0 {
 		return nil, ErrKeyNotFound
 	}
-	
+
 	result := make(map[string]string)
 	for _, kv := range resp.Kvs {
 		result[string(kv.Key)] = string(kv.Value)
@@ -63,7 +63,7 @@ func (e *EtcdStore) Get(ctx context.Context, key string, opts ...clientv3.OpOpti
 	if len(resp.Kvs) == 0 {
 		return "", ErrKeyNotFound
 	}
-	
+
 	return string(resp.Kvs[0].Value), nil
 }
 
@@ -86,4 +86,3 @@ func (e *EtcdStore) Delete(ctx context.Context, key string, opts ...clientv3.OpO
 	}
 	return nil
 }
-

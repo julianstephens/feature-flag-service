@@ -15,7 +15,7 @@ func PrintTable(header []string, rows [][]string) {
 	t := table.New()
 
 	t.Headers(header...)
-	
+
 	for row := range rows {
 		t.Row(rows[row]...)
 	}

@@ -11,7 +11,7 @@ import (
 
 // TODO: standardize role schema
 type RbacUserService struct {
-	conf *config.Config
+	conf  *config.Config
 	store storage.Store[any]
 }
 
@@ -44,7 +44,7 @@ func (s *RbacUserService) GetUserByEmail(email string) (*rbac.RbacUser, error) {
 	}
 
 	var rbacUser rbac.RbacUser
-    if err := json.Unmarshal([]byte(user), &rbacUser); err != nil {
+	if err := json.Unmarshal([]byte(user), &rbacUser); err != nil {
 		return nil, err
 	}
 
@@ -73,4 +73,3 @@ func (s *RbacUserService) ListUsers() ([]map[string]interface{}, error) {
 	// }
 	return nil, nil
 }
-
