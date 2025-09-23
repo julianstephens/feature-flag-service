@@ -21,5 +21,5 @@ seed: ## Seed the database with initial data
 	@echo "Seeding the database..."
 	@go build -o bin/seeder cmd/seed/main.go
 	@chmod +x bin/seeder
-	@./bin/seeder --db ${DB_URL}
+	@POSTGRES_URL=${DB_URL} ./bin/seeder
 	@rm -f bin/seeder
