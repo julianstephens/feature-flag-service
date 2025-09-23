@@ -34,7 +34,7 @@ func main() {
 
 	flagService := flag.NewService(conf, etcdClient)
 	authService := auth.NewAuthClient(conf)
-	userService := users.NewRbacUserService(conf, pgClient) 
+	userService := users.NewRbacUserService(conf, pgClient)
 
 	go func() {
 		log.Printf("Starting REST API on :%s...", conf.HTTPPort)

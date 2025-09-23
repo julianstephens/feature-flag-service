@@ -12,14 +12,14 @@ import (
 )
 
 type PostgresStore struct {
-    db *pgxpool.Pool
+	db *pgxpool.Pool
 }
 
 func NewPostgresStore(conf *config.Config) (*PostgresStore, error) {
-    pool, err := pgxpool.New(context.Background(), conf.PostgresURL)
-    if err != nil {
-        return nil, err
-    }
+	pool, err := pgxpool.New(context.Background(), conf.PostgresURL)
+	if err != nil {
+		return nil, err
+	}
 
 	// Test connection
 	err = pool.Ping(context.Background())
@@ -27,30 +27,30 @@ func NewPostgresStore(conf *config.Config) (*PostgresStore, error) {
 		return nil, err
 	}
 
-    return &PostgresStore{db: pool}, nil
+	return &PostgresStore{db: pool}, nil
 }
 
 func (p *PostgresStore) Close() error {
-    if p.db != nil {
-        p.db.Close()
-    }
-    return nil
+	if p.db != nil {
+		p.db.Close()
+	}
+	return nil
 }
 
 // Query helper
-func (p *PostgresStore) Query(ctx context.Context,sql string, args ...any) (pgx.Rows, error) {
+func (p *PostgresStore) Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
 	return p.db.Query(ctx, sql, args...)
 }
 
 // Exec helper
 func (p *PostgresStore) Exec(ctx context.Context, sql string, args ...any) error {
-    _, err := p.db.Exec(ctx, sql, args...)
-    return err
+	_, err := p.db.Exec(ctx, sql, args...)
+	return err
 }
 
 // ListAll retrieves all rows from the specified table
 func (p *PostgresStore) ListAll(ctx context.Context, table string, dest []any) error {
-    sql := fmt.Sprintf("SELECT * FROM %s", table)
+	sql := fmt.Sprintf("SELECT * FROM %s", table)
 	if err := pgxscan.Select(ctx, p.db, dest, sql); err != nil {
 		return err
 	}

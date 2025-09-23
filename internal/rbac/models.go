@@ -8,10 +8,10 @@ type RbacRoleDto struct {
 }
 
 type RbacRole struct {
-	ID           int    `json:"-"`
-	PublicRoleID string `json:"id"`
-	Name         string `json:"name"`
-	Description  string `json:"description"`
+	ID           int       `json:"-"`
+	PublicRoleID string    `json:"id"`
+	Name         string    `json:"name"`
+	Description  string    `json:"description"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
 }
@@ -28,10 +28,10 @@ type RbacUserDto struct {
 }
 
 type RbacUser struct {
-	ID        string `json:"id"`
-	Email     string `json:"email"`
-	Name      string `json:"name"`
-	Password  string `json:"-"`
+	ID        string    `json:"id"`
+	Email     string    `json:"email"`
+	Name      string    `json:"name"`
+	Password  string    `json:"-"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }

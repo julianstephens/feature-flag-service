@@ -19,7 +19,7 @@ type RbacUserService struct {
 
 const (
 	RBAC_USER_TABLE       = "rbac_users"
-	RBAC_USER_ROLES_TABLE  = "rbac_user_roles"
+	RBAC_USER_ROLES_TABLE = "rbac_user_roles"
 
 	JOIN_RBAC_USER_ROLES = `SELECT r.name
 		FROM rbac_roles r
@@ -55,7 +55,7 @@ func (s *RbacUserService) GetUserByEmail(email string) (*rbac.RbacUserDto, error
 		logger.Errorf("Error fetching user by email %s: %v", email, err)
 		if pgxscan.NotFound(err) {
 			return nil, storage.ErrKeyNotFound
-		} 
+		}
 		return nil, err
 	}
 
@@ -65,7 +65,7 @@ func (s *RbacUserService) GetUserByEmail(email string) (*rbac.RbacUserDto, error
 		logger.Errorf("Error fetching roles for user %s: %v", rbacUser.ID, err)
 		if pgxscan.NotFound(err) {
 			return nil, storage.ErrKeyNotFound
-		} 
+		}
 		return nil, err
 	}
 	defer rows.Close()
@@ -79,7 +79,6 @@ func (s *RbacUserService) GetUserByEmail(email string) (*rbac.RbacUserDto, error
 		}
 		roles = append(roles, role)
 	}
-
 
 	return &rbac.RbacUserDto{
 		RbacUser: rbacUser,
