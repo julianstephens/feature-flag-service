@@ -5,8 +5,12 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
-type LoginResponse struct {
+type RefreshRequest struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
+type TokenResponse struct {
 	Token        string `json:"token"`
-	ExpiresIn    string `json:"expires_in"`
+	ExpiresIn    int    `json:"expires_in"`
 	RefreshToken string `json:"refresh_token,omitempty"`
 }

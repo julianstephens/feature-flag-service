@@ -15,6 +15,7 @@ import (
 	"github.com/julianstephens/feature-flag-service/internal/auth"
 	"github.com/julianstephens/feature-flag-service/internal/config"
 	"github.com/julianstephens/feature-flag-service/internal/flag"
+	"github.com/julianstephens/feature-flag-service/internal/rbac/users"
 	"github.com/julianstephens/go-utils/httputil/middleware"
 	"github.com/julianstephens/go-utils/httputil/request"
 	"github.com/julianstephens/go-utils/httputil/response"
@@ -28,7 +29,7 @@ func StartREST(addr string, conf *config.Config, services ...any) error {
 	logger := log.New(os.Stdout, "[HTTP] ", log.LstdFlags)
 	errorLogger := log.New(os.Stderr, "[ERROR] ", log.LstdFlags)
 
-	responder := response.New()
+	responder := response.NewEmpty()
 
 	router := mux.NewRouter()
 	router.Use(middleware.RequestID())
@@ -48,6 +49,8 @@ func StartREST(addr string, conf *config.Config, services ...any) error {
 			servicesMap["flagService"] = s
 		case *auth.AuthClient:
 			servicesMap["authService"] = s
+		case *users.RbacUserService:
+			servicesMap["userService"] = s
 		// case config.Service: --- IGNORE ---
 		// 	servicesMap["configService"] = s --- IGNORE ---
 		// case audit.Service: --- IGNORE ---
@@ -137,6 +140,12 @@ func StartREST(addr string, conf *config.Config, services ...any) error {
 		}
 		responder.NoContent(w, r)
 	}).Methods("DELETE")
+
+	authSvc := servicesMap["authService"].(*auth.AuthClient)
+	userSvc := servicesMap["userService"].(*users.RbacUserService)
+	authGrp := apiGrp.PathPrefix("/auth").Subrouter()
+	authGrp.HandleFunc("/login", auth.LoginHandler(authSvc, userSvc, responder)).Methods("POST")
+	authGrp.HandleFunc("/refresh", auth.RefreshHandler(authSvc, userSvc, responder)).Methods("POST")
 
 	srv := &http.Server{
 		Addr:    addr,

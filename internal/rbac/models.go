@@ -22,11 +22,18 @@ type CreateRbacRoleRequest struct {
 	Description  string `json:"description"`
 }
 
+type RbacUserDto struct {
+	RbacUser
+	Roles []string `json:"roles"`
+}
+
 type RbacUser struct {
 	ID        string `json:"id"`
 	Email     string `json:"email"`
 	Name      string `json:"name"`
+	Password  string `json:"-"`
 	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type CreateRbacUserRequest struct {

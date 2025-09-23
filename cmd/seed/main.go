@@ -14,9 +14,9 @@ import (
 )
 
 func main() {
-	dbURL := os.Getenv("POSTGRES_URL")
+	dbURL := os.Getenv("DB_URL")
 	if dbURL == "" {
-		fmt.Fprintln(os.Stderr, "POSTGRES_URL env var is required")
+		fmt.Fprintln(os.Stderr, "DB_URL env var is required")
 		os.Exit(1)
 	}
 

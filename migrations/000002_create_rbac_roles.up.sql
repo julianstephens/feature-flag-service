@@ -1,5 +1,8 @@
 CREATE TABLE rbac_roles (
     id SERIAL PRIMARY KEY,
+    public_id UUID DEFAULT gen_random_uuid() UNIQUE NOT NULL,
     name TEXT UNIQUE NOT NULL,
-    description TEXT
+    description TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

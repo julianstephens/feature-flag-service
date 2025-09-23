@@ -13,6 +13,7 @@ import (
 	"github.com/julianstephens/feature-flag-service/internal/auth"
 	"github.com/julianstephens/feature-flag-service/internal/config"
 	"github.com/julianstephens/feature-flag-service/internal/flag"
+	"github.com/julianstephens/feature-flag-service/internal/rbac/users"
 	"github.com/julianstephens/feature-flag-service/internal/server"
 	"github.com/julianstephens/feature-flag-service/internal/storage"
 )
@@ -23,13 +24,21 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to connect to etcd: %v", err)
 	}
-	defer etcdClient.Client.Close()
+	defer etcdClient.Close()
+
+	pgClient, err := storage.NewPostgresStore(conf)
+	if err != nil {
+		log.Fatalf("Failed to connect to Postgres: %v", err)
+	}
+	defer pgClient.Close()
+
 	flagService := flag.NewService(conf, etcdClient)
 	authService := auth.NewAuthClient(conf)
+	userService := users.NewRbacUserService(conf, pgClient) 
 
 	go func() {
 		log.Printf("Starting REST API on :%s...", conf.HTTPPort)
-		if err := server.StartREST(":"+conf.HTTPPort, conf, flagService, authService); err != nil && err != http.ErrServerClosed {
+		if err := server.StartREST(":"+conf.HTTPPort, conf, flagService, authService, userService); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("REST server error: %v", err)
 		}
 	}()

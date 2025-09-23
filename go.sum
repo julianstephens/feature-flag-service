@@ -25,6 +25,8 @@ github.com/coreos/go-systemd/v22 v22.5.0/go.mod h1:Y58oyj3AT4RCenI/lSvhwexgC+NSV
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/georgysavva/scany/v2 v2.1.4 h1:nrzHEJ4oQVRoiKmocRqA1IyGOmM/GQOEsg9UjMR5Ip4=
+github.com/georgysavva/scany/v2 v2.1.4/go.mod h1:fqp9yHZzM/PFVa3/rYEC57VmDx+KDch0LoqrJzkvtos=
 github.com/go-logfmt/logfmt v0.6.0 h1:wGYYu3uicYdqXVgoYbvnkrPVXkuLM1p1ifugDMEdRi4=
 github.com/go-logfmt/logfmt v0.6.0/go.mod h1:WYhtIu8zTZfxdn5+rREduYbwxfcBr/Vr6KEVveWlfTs=
 github.com/go-logr/logr v1.4.3 h1:CjnDlHq8ikf6E492q6eKboGOC0T8CDaOvkHCIg8idEI=
@@ -66,6 +68,16 @@ github.com/julianstephens/go-utils v0.1.2 h1:4Kz33lFtrVqcshQYY07QzfaHZRP7YV9Jezg
 github.com/julianstephens/go-utils v0.1.2/go.mod h1:LbCv3KpJnstnVwK7obI0E/19HjsW8zSMWKv+/jDhp+0=
 github.com/julianstephens/go-utils v0.1.3 h1:ffaxMvYNH/ITJ5IW6+NjOv/y19+r1pPz84a6Tv5QBkE=
 github.com/julianstephens/go-utils v0.1.3/go.mod h1:8dM9UUE2kFS9fMKRXlns0tt3CYZTIvxzvnUIDggJMV8=
+github.com/julianstephens/go-utils v0.1.4 h1:2yxX/jS+/ywzuwLkXEktzEmPjo3ukcOJopiW7hfh5bk=
+github.com/julianstephens/go-utils v0.1.4/go.mod h1:yUA62/VLNWbG8G0b6Sh1/4juXZBsGnlE5WYZRxkYyCU=
+github.com/julianstephens/go-utils v0.1.5 h1:ahs/9JO+OzwSmiDfCeGn/H8rJUmXamPYDUWVzKNcL5E=
+github.com/julianstephens/go-utils v0.1.5/go.mod h1:yUA62/VLNWbG8G0b6Sh1/4juXZBsGnlE5WYZRxkYyCU=
+github.com/julianstephens/go-utils v0.1.6 h1:Ph0aciESlir/qzbhkzDxq8XvRevyoOcjRgPKDE00T0w=
+github.com/julianstephens/go-utils v0.1.6/go.mod h1:yUA62/VLNWbG8G0b6Sh1/4juXZBsGnlE5WYZRxkYyCU=
+github.com/julianstephens/go-utils v0.2.0 h1:P9MOn296duBQWJaeOLUkoCGkBu0VlCaz/nQLtnGoFJk=
+github.com/julianstephens/go-utils v0.2.0/go.mod h1:yUA62/VLNWbG8G0b6Sh1/4juXZBsGnlE5WYZRxkYyCU=
+github.com/julianstephens/go-utils v0.2.1 h1:JITTf+nFpVA0GJtPWd+ijD1/5ERVVzWacyer709mtKM=
+github.com/julianstephens/go-utils v0.2.1/go.mod h1:PyEZnP295AWgOVxunSMyjolBzosC1tRwdbdz+eVFHSg=
 github.com/kelseyhightower/envconfig v1.4.0 h1:Im6hONhd3pLkfDFsbRgu68RDNkGF1r3dvMUtDTo2cv8=
 github.com/kelseyhightower/envconfig v1.4.0/go.mod h1:cccZRl6mQpaq41TPp5QxidR+Sa3axMbJDNb//FQX6Gg=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
@@ -83,6 +95,8 @@ github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZN
 github.com/rivo/uniseg v0.2.0/go.mod h1:J6wj4VEh+S6ZtnVlnTBMWIodfgj8LQOQFoIToxlJtxc=
 github.com/rivo/uniseg v0.4.7 h1:WUdvkW8uEhrYfLC4ZzdpI2ztxP1I582+49Oc5Mq64VQ=
 github.com/rivo/uniseg v0.4.7/go.mod h1:FN3SvrM+Zdj16jyLfmOkMNblXMcoc8DfTHruCPUcx88=
+github.com/sirupsen/logrus v1.9.3 h1:dueUQJ1C2q9oE3F7wvmSGAaVtTmUizReu6fjN8uqzbQ=
+github.com/sirupsen/logrus v1.9.3/go.mod h1:naHLuLoDiP4jHNo9R0sCBMtWGeIprob74mVsIT4qYEQ=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
@@ -141,9 +155,11 @@ golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9/go.mod h1:RxMgew5VJxzue5/jJ
 golang.org/x/sync v0.15.0 h1:KWH3jNZsfyT6xfAfKiz6MRNmd46ByHDYaZ7KSkCtdW8=
 golang.org/x/sync v0.15.0/go.mod h1:1dzgHSNfp02xaA81J2MS99Qcpr2w7fw1gpm99rleRqA=
 golang.org/x/sync v0.17.0 h1:l60nONMj9l5drqw6jlhIELNv9I0A4OFgRsG9k2oT9Ug=
+golang.org/x/sync v0.17.0/go.mod h1:9KTHXmSnoGruLpwFjVSX0lNNA75CykiMECbovNTZqGI=
 golang.org/x/sys v0.0.0-20190215142949-d0b11bdaac8a/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
 golang.org/x/sys v0.0.0-20190412213103-97732733099d/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20200930185726-fdedc70b468f/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.6.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.33.0 h1:q3i8TbbEz+JRD9ywIRlyRAQbM0qF7hu24q3teo2hbuw=
 golang.org/x/sys v0.33.0/go.mod h1:BJP2sWEmIv4KK5OTEluFJCKSidICx8ciO85XgH3Ak8k=

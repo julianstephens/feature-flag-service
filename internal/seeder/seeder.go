@@ -29,10 +29,11 @@ func (s *Seeder) SeedRoles(ctx context.Context, roles []rbac.CreateRbacRoleReque
 			return fmt.Errorf("check role %s existence: %w", role.Name, err)
 		}
 		if !exists {
+			now := time.Now()
 			_, err := s.conn.Exec(ctx,
 				`INSERT INTO rbac_roles (name, description, created_at, updated_at)
 				 VALUES ($1, $2, $3, $3)`,
-				role.Name, role.Description, time.Now(),
+				role.Name, role.Description, now,
 			)
 			if err != nil {
 				return fmt.Errorf("insert role %s: %w", role.Name, err)

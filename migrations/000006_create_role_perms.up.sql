@@ -1,7 +1,8 @@
 CREATE TABLE rbac_permissions (
   id SERIAL PRIMARY KEY,
   name VARCHAR(64) UNIQUE NOT NULL,
-  description TEXT
+  description TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE rbac_role_permissions (
