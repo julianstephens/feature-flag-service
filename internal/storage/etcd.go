@@ -8,45 +8,50 @@ import (
 )
 
 type EtcdStore struct {
-	Client    *clientv3.Client
-	KeyPrefix string
+	client    *clientv3.Client
+	keyPrefix string
 }
 
-func NewEtcdStore(endpoints []string, keyPrefix string) (*EtcdStore, error) {
-	cfg := clientv3.Config{
+func NewEtcdStore(endpoints []string, prefix string) (*EtcdStore, error) {
+	cli, err := clientv3.New(clientv3.Config{
 		Endpoints:   endpoints,
-		DialTimeout: 30 * time.Second,
-	}
-	client, err := clientv3.New(cfg)
+		DialTimeout: time.Second * 10,
+	})
 	if err != nil {
 		return nil, err
 	}
-
 	return &EtcdStore{
-		Client:    client,
-		KeyPrefix: keyPrefix,
+		client:    cli,
+		keyPrefix: prefix,
 	}, nil
 }
 
-func (e *EtcdStore) Connect() error {
-	// The etcd client connects on creation, so we can just return nil here.
-	return nil
-}
-
+// Close the etcd client connection
 func (e *EtcdStore) Close() error {
-	return e.Client.Close()
+	return e.client.Close()
 }
 
-func (e *EtcdStore) List(ctx context.Context, key string, opts ...clientv3.OpOption) (map[string]string, error) {
-	resp, err := e.Client.Get(ctx, key, append([]clientv3.OpOption{clientv3.WithPrefix()}, opts...)...)
+// Get helper to get a single key
+func (e *EtcdStore) Get(ctx context.Context, key string, opts ...clientv3.OpOption) (*clientv3.GetResponse, error) {
+	return e.client.Get(ctx, e.keyPrefix+key, opts...)
+}
+
+// Put helper to put a single key
+func (e *EtcdStore) Put(ctx context.Context, key, value string, opts ...clientv3.OpOption) (*clientv3.PutResponse, error) {
+	return e.client.Put(ctx, e.keyPrefix+key, value, opts...)
+}
+
+// Delete helper to delete a single key
+func (e *EtcdStore) Delete(ctx context.Context, key string, opts ...clientv3.OpOption) (*clientv3.DeleteResponse, error) {
+	return e.client.Delete(ctx, e.keyPrefix+key, opts...)
+}
+
+// List all keys with a given prefix
+func (e *EtcdStore) ListAll(ctx context.Context, prefix string) (map[string]string, error) {
+	resp, err := e.client.Get(ctx, e.keyPrefix+prefix, clientv3.WithPrefix())
 	if err != nil {
 		return nil, err
 	}
-
-	if len(resp.Kvs) == 0 {
-		return nil, ErrKeyNotFound
-	}
-	
 	result := make(map[string]string)
 	for _, kv := range resp.Kvs {
 		result[string(kv.Key)] = string(kv.Value)
@@ -54,36 +59,32 @@ func (e *EtcdStore) List(ctx context.Context, key string, opts ...clientv3.OpOpt
 	return result, nil
 }
 
-func (e *EtcdStore) Get(ctx context.Context, key string, opts ...clientv3.OpOption) (string, error) {
-	resp, err := e.Client.Get(ctx, key, opts...)
-	if err != nil {
-		return "", err
+// ParseSingleGetResponse parses a single get response
+func (e *EtcdStore) ParseSingleGetResponse(resp *clientv3.GetResponse) ([]byte, error) {
+	if resp.Count == 0 {
+		return nil, nil
 	}
-
-	if len(resp.Kvs) == 0 {
-		return "", ErrKeyNotFound
-	}
-	
-	return string(resp.Kvs[0].Value), nil
+	return resp.Kvs[0].Value, nil
 }
 
-func (e *EtcdStore) Put(ctx context.Context, key, value string, opts ...clientv3.OpOption) (string, error) {
-	_, err := e.Client.Put(ctx, key, value, opts...)
-	return "", err
+// ParseSingleDeleteResponse parses a single delete response
+func (e *EtcdStore) ParseSingleDeleteResponse(resp *clientv3.DeleteResponse) (int64, error) {
+	return resp.Deleted, nil
 }
 
-func (e *EtcdStore) Post(ctx context.Context, key, value string, opts ...clientv3.OpOption) (string, error) {
-	return "", ErrNotImplemented
-}
-
-func (e *EtcdStore) Delete(ctx context.Context, key string, opts ...clientv3.OpOption) error {
-	resp, err := e.Client.Delete(ctx, key, opts...)
-	if err != nil {
-		return err
+// ParseSinglePutResponse parses a single put response
+func (e *EtcdStore) ParseSinglePutResponse(resp *clientv3.PutResponse) ([]byte, error) {
+	if resp.PrevKv == nil {
+		return nil, nil
 	}
-	if resp.Deleted == 0 {
-		return ErrKeyNotFound
-	}
-	return nil
+	return resp.PrevKv.Value, nil
 }
 
+// ParseListResponse parses a list response
+func (e *EtcdStore) ParseListResponse(resp *clientv3.GetResponse) (map[string][]byte, error) {
+	result := make(map[string][]byte)
+	for _, kv := range resp.Kvs {
+		result[string(kv.Key)] = kv.Value
+	}
+	return result, nil
+}

@@ -22,7 +22,7 @@ type CLI struct {
 
 	Login struct {
 	} `cmd:"" help:"Login to the feature management system."`
-	Flag commands.FlagCommand `cmd:"" help:"Manage feature flags."`
+	Flag  commands.FlagCommand `cmd:"" help:"Manage feature flags."`
 	Audit struct {
 	} `cmd:"" help:"Audit log operations."`
 }

@@ -5,7 +5,6 @@ import (
 	"errors"
 )
 
-
 var ErrKeyNotFound = errors.New("key not found")
 var ErrNotImplemented = errors.New("not implemented")
 
