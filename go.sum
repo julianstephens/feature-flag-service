@@ -78,6 +78,8 @@ github.com/julianstephens/go-utils v0.2.0 h1:P9MOn296duBQWJaeOLUkoCGkBu0VlCaz/nQ
 github.com/julianstephens/go-utils v0.2.0/go.mod h1:yUA62/VLNWbG8G0b6Sh1/4juXZBsGnlE5WYZRxkYyCU=
 github.com/julianstephens/go-utils v0.2.1 h1:JITTf+nFpVA0GJtPWd+ijD1/5ERVVzWacyer709mtKM=
 github.com/julianstephens/go-utils v0.2.1/go.mod h1:PyEZnP295AWgOVxunSMyjolBzosC1tRwdbdz+eVFHSg=
+github.com/julianstephens/go-utils v0.2.2 h1:8e1HUrVxU9FmCcyJaEaXhMqEQhoYJ/yGym9tNIkb3Z0=
+github.com/julianstephens/go-utils v0.2.2/go.mod h1:PyEZnP295AWgOVxunSMyjolBzosC1tRwdbdz+eVFHSg=
 github.com/kelseyhightower/envconfig v1.4.0 h1:Im6hONhd3pLkfDFsbRgu68RDNkGF1r3dvMUtDTo2cv8=
 github.com/kelseyhightower/envconfig v1.4.0/go.mod h1:cccZRl6mQpaq41TPp5QxidR+Sa3axMbJDNb//FQX6Gg=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=

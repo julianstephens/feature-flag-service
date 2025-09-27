@@ -2,10 +2,13 @@ package utils
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/charmbracelet/lipgloss/table"
 	"github.com/google/uuid"
 )
+
+const DEFAULT_TIMEOUT = 30 * time.Second
 
 func GenerateID() string {
 	return uuid.New().String()

@@ -64,9 +64,9 @@ components:
   schemas:
     LoginRequest:
       type: object
-      required: [email, password]
+      required: [username, password]
       properties:
-        email:
+        username:
           type: string
           format: email
         password:

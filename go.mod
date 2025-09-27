@@ -7,7 +7,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/jackc/pgx/v5 v5.7.6
-	github.com/julianstephens/go-utils v0.2.1
+	github.com/julianstephens/go-utils v0.2.2
 	github.com/kelseyhightower/envconfig v1.4.0
 	go.etcd.io/etcd/client/v3 v3.6.4
 	google.golang.org/grpc v1.75.1

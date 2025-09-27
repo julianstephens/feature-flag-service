@@ -10,19 +10,23 @@ import (
 
 type AuthClient struct {
 	issuer  string
-	manager *authutils.JWTManager
+	Manager *authutils.JWTManager
 }
 
-func NewAuthClient(conf *config.Config) *AuthClient {
+func NewAuthClient(conf *config.Config) (*AuthClient, error) {
+	manager, err := authutils.NewJWTManager(conf.JWTSecret, time.Duration(conf.JWTExpiry)*time.Second, conf.JWTIssuer)
+	if err != nil {
+		return nil, err
+	}
 	return &AuthClient{
 		issuer:  conf.JWTIssuer,
-		manager: authutils.NewJWTManager(conf.JWTSecret, time.Duration(conf.JWTExpiry)*time.Second, conf.JWTIssuer),
-	}
+		Manager: manager,
+	}, nil
 }
 
 // Authenticate validates the token and checks that the user ID in the claims matches the provided user ID.
 func (a *AuthClient) Authenticate(token, userId string) (bool, error) {
-	claims, err := a.manager.ValidateToken(token)
+	claims, err := a.Manager.ValidateToken(token)
 	if err != nil {
 		return false, err
 	}
@@ -36,7 +40,7 @@ func (a *AuthClient) Issue(userId string, roles []string, claims *map[string]any
 		return nil, err
 	}
 
-	exp, err := a.manager.TokenExpiration(token)
+	exp, err := a.Manager.TokenExpiration(token)
 	if err != nil {
 		return nil, err
 	}
@@ -50,12 +54,12 @@ func (a *AuthClient) Issue(userId string, roles []string, claims *map[string]any
 
 // Refresh generates a new JWT token and refresh token using the provided refresh token.
 func (a *AuthClient) Refresh(token string) (*TokenResponse, error) {
-	token, err := a.manager.RefreshToken(token)
+	token, err := a.Manager.RefreshToken(token)
 	if err != nil {
 		return nil, err
 	}
 
-	exp, err := a.manager.TokenExpiration(token)
+	exp, err := a.Manager.TokenExpiration(token)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +73,7 @@ func (a *AuthClient) Refresh(token string) (*TokenResponse, error) {
 
 // GenerateToken generates a JWT token for the given user ID, roles, and custom claims.
 func (a *AuthClient) GenerateToken(userID string, roles []string, customClaims *map[string]any) (string, error) {
-	return a.manager.GenerateTokenWithClaims(userID, roles, helpers.Default(*customClaims, make(map[string]any, 0)))
+	return a.Manager.GenerateTokenWithClaims(userID, roles, helpers.Default(*customClaims, make(map[string]any, 0)))
 }
 
 func (a *AuthClient) validateClaims(claims *authutils.Claims, userID string) bool {
