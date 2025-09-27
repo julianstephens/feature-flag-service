@@ -8,8 +8,6 @@ import (
 	"go.etcd.io/etcd/api/v3/v3rpc/rpctypes"
 )
 
-
-
 func HandleError(responder *response.Responder, w http.ResponseWriter, r *http.Request, err error) {
 	switch err {
 	case context.Canceled:

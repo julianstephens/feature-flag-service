@@ -15,8 +15,7 @@ import (
 	"github.com/julianstephens/go-utils/httputil/response"
 )
 
-
-func RegisterFlagRoutes(router  *mux.Router, flagSvc flag.Service, authSvc *auth.AuthClient, responder *response.Responder) {
+func RegisterFlagRoutes(router *mux.Router, flagSvc flag.Service, authSvc *auth.AuthClient, responder *response.Responder) {
 	readRoutes := router.PathPrefix("").Subrouter()
 	readRoutes.Use(middleware.RequireRoles(authSvc.Manager, "user", "editor", "admin"))
 	readRoutes.HandleFunc("", func(w http.ResponseWriter, r *http.Request) {

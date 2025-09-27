@@ -1,5 +1,5 @@
 
-.PHONY: help apigen migrate revision seed
+.PHONY: help apigen migrate revision seed utils
 
 help: ## Prints help for targets with comments
 	@cat $(MAKEFILE_LIST) | grep -E '^[a-zA-Z_-]+:.*?## .*$$' | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -23,3 +23,8 @@ seed: ## Seed the database with initial data
 	@chmod +x bin/seeder
 	@POSTGRES_URL=${DB_URL} ./bin/seeder
 	@rm -f bin/seeder
+
+utils: ## Install latest go-utils
+	@echo "Installing go-utils..."
+	@go clean -modcache
+	@go get github.com/julianstephens/go-utils@latest
