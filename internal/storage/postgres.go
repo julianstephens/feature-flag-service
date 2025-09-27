@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/jackc/pgx/v5"
@@ -50,16 +49,14 @@ func (p *PostgresStore) Exec(ctx context.Context, sql string, args ...any) error
 
 // ListAll retrieves all rows from the specified table
 func (p *PostgresStore) ListAll(ctx context.Context, table string, dest []any) error {
-	sql := fmt.Sprintf("SELECT * FROM %s", table)
-	if err := pgxscan.Select(ctx, p.db, dest, sql); err != nil {
+	if err := pgxscan.Select(ctx, p.db, dest, "SELECT * FROM $1", table); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (p *PostgresStore) Get(ctx context.Context, table string, dest any, where string, args ...any) error {
-	sql := fmt.Sprintf("SELECT * FROM %s WHERE %s LIMIT 1", table, where)
-	if err := pgxscan.Get(ctx, p.db, dest, sql, args...); err != nil {
+	if err := pgxscan.Get(ctx, p.db, dest, "SELECT * FROM $1 WHERE $2 LIMIT 1", table, where); err != nil {
 		return err
 	}
 	return nil
