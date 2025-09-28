@@ -1,0 +1,6 @@
+repos:
+  - repo: https://github.com/tekwizely/pre-commit-golang
+    rev: v1.0.0-rc.2
+    hooks:
+      - id: go-mod-tidy
+      - id: go-fmt
