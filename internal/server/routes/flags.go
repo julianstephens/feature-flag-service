@@ -84,7 +84,10 @@ func RegisterFlagRoutes(router *mux.Router, flagSvc flag.Service, authSvc *auth.
 
 		responder.OK(w, r, res)
 	}).Methods("PUT")
-	writeRoutes.HandleFunc("/{flagKey}", func(w http.ResponseWriter, r *http.Request) {
+
+	deleteRoutes := router.PathPrefix("").Subrouter()
+	deleteRoutes.Use(middleware.RequireRoles(authSvc.Manager, "admin"))
+	deleteRoutes.HandleFunc("/{flagKey}", func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(context.Background(), utils.DEFAULT_TIMEOUT)
 		defer cancel()
 		vars := mux.Vars(r)

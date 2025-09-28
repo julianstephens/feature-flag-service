@@ -38,6 +38,7 @@ const (
 type Service interface {
 	CreateUser(ctx context.Context, email, name, password string, roles []string) (*rbac.RbacUserDto, error)
 	UpdateUser(ctx context.Context, id, email, name string, roles []string) error
+	ActivateUser(ctx context.Context, id, newPassword string) error
 	GetUser(ctx context.Context, id string) (*rbac.RbacUserDto, error)
 	GetUserByEmail(ctx context.Context, email string) (*rbac.RbacUserDto, error)
 	DeleteUser(ctx context.Context, id string) error
@@ -261,4 +262,13 @@ func (s *RbacUserService) ListUserRoles(ctx context.Context, id string) ([]*rbac
 	}
 
 	return roleDtos, nil
+}
+
+func (s *RbacUserService) ActivateUser(ctx context.Context, id, newPassword string) error {
+	hashedPassword, err := security.HashPassword(newPassword)
+	if err != nil {
+		return err
+	}
+
+	return s.store.Exec(ctx, "UPDATE rbac_users SET password=$1, activated=TRUE WHERE id=$2", hashedPassword, id)
 }

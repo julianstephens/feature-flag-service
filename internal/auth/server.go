@@ -34,3 +34,15 @@ func (s *AuthGRPCServer) Refresh(ctx context.Context, req *ffpb.RefreshRequest) 
 		ExpiresIn:    int64(tokenResp.ExpiresIn),
 	}, nil
 }
+
+func (s *AuthGRPCServer) Activate(ctx context.Context, req *ffpb.ActivateRequest) (*ffpb.LoginResponse, error) {
+	tokenResp, err := s.Service.Activate(ctx, req.Email, req.Password, req.NewPassword)
+	if err != nil {
+		return nil, err
+	}
+	return &ffpb.LoginResponse{
+		AccessToken:  tokenResp.Token,
+		RefreshToken: tokenResp.RefreshToken,
+		ExpiresIn:    int64(tokenResp.ExpiresIn),
+	}, nil
+}

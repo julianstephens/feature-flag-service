@@ -47,7 +47,8 @@ message RbacUser {
     string id = 1;
     string email = 2;
     string name = 3;
-    string created_at = 4;
-    string updated_at = 5;
-    repeated string roles = 6;
+    bool activated = 4;
+    string created_at = 5;
+    string updated_at = 6;
+    repeated string roles = 7;
 }

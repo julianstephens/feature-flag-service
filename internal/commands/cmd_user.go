@@ -13,6 +13,7 @@ import (
 type UserCommand struct {
 	Create struct {
 		Email string `arg:"" help:"Email of the user to create."`
+		Name  string `arg:"" help:"Name of the user to create."`
 	} `cmd:"" help:"Create a new user."`
 	List struct{} `cmd:"" help:"List all users."`
 	Get  struct {
@@ -30,8 +31,8 @@ type UserCommand struct {
 	} `cmd:"" help:"Update a user."`
 }
 
-func (c *UserCommand) ListUsers(conf *config.Config, client ffpb.RbacUserServiceClient) error {
-	ctx, cancel := context.WithTimeout(context.Background(), utils.DEFAULT_TIMEOUT)
+func (c *UserCommand) ListUsers(ctx context.Context, conf *config.Config, client ffpb.RbacUserServiceClient) error {
+	ctx, cancel := context.WithTimeout(ctx, utils.DEFAULT_TIMEOUT)
 	defer cancel()
 
 	users, err := client.ListUsers(ctx, &ffpb.ListUsersRequest{})
@@ -50,8 +51,8 @@ func (c *UserCommand) ListUsers(conf *config.Config, client ffpb.RbacUserService
 	return nil
 }
 
-func (c *UserCommand) GetUser(conf *config.Config, client ffpb.RbacUserServiceClient) error {
-	ctx, cancel := context.WithTimeout(context.Background(), utils.DEFAULT_TIMEOUT)
+func (c *UserCommand) GetUser(ctx context.Context, conf *config.Config, client ffpb.RbacUserServiceClient) error {
+	ctx, cancel := context.WithTimeout(ctx, utils.DEFAULT_TIMEOUT)
 	defer cancel()
 
 	var user *ffpb.RbacUser
@@ -76,14 +77,36 @@ func (c *UserCommand) GetUser(conf *config.Config, client ffpb.RbacUserServiceCl
 	return nil
 }
 
-func (c *UserCommand) CreateUser(conf *config.Config, client ffpb.RbacUserServiceClient) error {
+func (c *UserCommand) CreateUser(ctx context.Context, conf *config.Config, client ffpb.RbacUserServiceClient) error {
+	ctx, cancel := context.WithTimeout(ctx, utils.DEFAULT_TIMEOUT)
+	defer cancel()
+
+	password, err := utils.GenerateTempPassword()
+	if err != nil {
+		cliutil.PrintError("Failed to generate temporary password")
+		return err
+	}
+
+	user, err := client.CreateUser(ctx, &ffpb.CreateUserRequest{
+		Email:    c.Create.Email,
+		Name:     c.Create.Name,
+		Password: password,
+	})
+	if err != nil {
+		cliutil.PrintError("Failed to create user")
+		return err
+	}
+
+	utils.PrintUser(user.Id, user.Email, user.Name, user.CreatedAt, user.UpdatedAt, []string{})
+	cliutil.PrintInfo("Temporary password: " + password + "\nPlease change this password after logging in.")
+
 	return nil
 }
 
-func (c *UserCommand) UpdateUser(conf *config.Config, client ffpb.RbacUserServiceClient) error {
+func (c *UserCommand) UpdateUser(ctx context.Context, conf *config.Config, client ffpb.RbacUserServiceClient) error {
 	return nil
 }
 
-func (c *UserCommand) DeleteUser(conf *config.Config, client ffpb.RbacUserServiceClient) error {
+func (c *UserCommand) DeleteUser(ctx context.Context, conf *config.Config, client ffpb.RbacUserServiceClient) error {
 	return nil
 }

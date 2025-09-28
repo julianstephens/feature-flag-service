@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
 	ffpb "github.com/julianstephens/feature-flag-service/gen/go/grpc/v1/featureflag.v1"
@@ -33,11 +32,15 @@ type AuthCommand struct {
 	Login struct {
 		Email string `arg:"" help:"Email of the user to log in as."`
 	} `cmd:"" help:"Login to the featurectl CLI"`
-	Status struct{} `cmd:"" help:"Check login status."`
+	Status   struct{} `cmd:"" help:"Check login status."`
+	Activate struct {
+		Email       string `arg:"" help:"Email of the user to activate."`
+		Password    string `help:"The temporary password for the user."`
+		NewPassword string `help:"New password for the user."`
+	} `cmd:"" help:"Activate a user account with a new password."`
 }
 
-func (c *AuthCommand) RunLogin(conf *config.Config, conn *grpc.ClientConn) error {
-	client := ffpb.NewAuthServiceClient(conn)
+func (c *AuthCommand) RunLogin(conf *config.Config, client ffpb.AuthServiceClient) error {
 	req := &ffpb.LoginRequest{
 		Email: c.Login.Email,
 	}
@@ -91,6 +94,47 @@ func (c *AuthCommand) RunStatus(ctx context.Context, mgr *authutil.JWTManager) e
 	return nil
 }
 
+func (c *AuthCommand) RunActivate(ctx context.Context, client ffpb.AuthServiceClient) error {
+	ctx, cancel := context.WithTimeout(ctx, utils.DEFAULT_TIMEOUT)
+	defer cancel()
+
+	authData, err := client.Activate(ctx, &ffpb.ActivateRequest{
+		Email:       c.Activate.Email,
+		Password:    c.Activate.Password,
+		NewPassword: c.Activate.NewPassword,
+	})
+	if err != nil {
+		cliutil.PrintError("Failed to activate account")
+		return err
+	}
+	authCache := &types.AuthData{
+		Credentials: types.Credentials{
+			AccessToken:  authData.AccessToken,
+			RefreshToken: authData.RefreshToken,
+			ExpiresAt:    time.Now().Unix() + authData.ExpiresIn,
+		},
+	}
+
+	key, err := security.GenerateRandomKey(utils.DEFAULT_KEY_SIZE)
+	if err != nil {
+		cliutil.PrintError("Failed to generate encryption key")
+		return err
+	}
+	if err := cache.WriteBytes(keyFileName, key); err != nil {
+		cliutil.PrintError("Failed to save encryption key")
+		return err
+	}
+
+	if err := auth.SecureSave(key, authCache.Credentials); err != nil {
+		cliutil.PrintError("Failed to save authentication data")
+		return err
+	}
+
+	cliutil.PrintSuccess("Account activated successfully")
+
+	return nil
+}
+
 func login(ctx context.Context, req *ffpb.LoginRequest, client ffpb.AuthServiceClient) (err error) {
 	var creds types.Credentials
 
@@ -103,7 +147,7 @@ func login(ctx context.Context, req *ffpb.LoginRequest, client ffpb.AuthServiceC
 
 	// 2. If no cache, generate & save new key
 	if len(key) == 0 {
-		key, err = security.GenerateRandomKey(32)
+		key, err = security.GenerateRandomKey(utils.DEFAULT_KEY_SIZE)
 		if err != nil {
 			err = fmt.Errorf("error generating key: %w", err)
 			return

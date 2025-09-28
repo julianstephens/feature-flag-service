@@ -907,6 +907,10 @@ components:
           type: string
           description: Full name of the user
           example: "John Doe"
+        activated:
+          type: boolean
+          description: Whether the user account is activated
+          example: true
         createdAt:
           type: string
           format: date-time

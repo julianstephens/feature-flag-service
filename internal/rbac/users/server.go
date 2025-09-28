@@ -54,6 +54,7 @@ func ToProto(u *rbac.RbacUserDto) *ffpb.RbacUser {
 		Id:        u.ID,
 		Email:     u.Email,
 		Name:      u.Name,
+		Activated: u.Activated,
 		CreatedAt: u.CreatedAt.Format(time.RFC3339),
 		UpdatedAt: u.UpdatedAt.Format(time.RFC3339),
 		Roles:     u.Roles,

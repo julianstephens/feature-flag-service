@@ -64,7 +64,7 @@ func main() {
 
 	ctx, err := createAuthenticatedContext(jwtManager)
 	if err != nil {
-		cliutil.PrintWarning(fmt.Sprintf("Failed to create authenticated context: %v", err))
+		cliutil.PrintWarning("Authentication not configured. Some commands may require authentication.")
 	}
 
 	cmd := strings.Split(kongCtx.Command(), " ")
@@ -75,12 +75,14 @@ func main() {
 			return
 		}
 		subcmd := cmd[1]
-
+		client := ffpb.NewAuthServiceClient(conn)
 		switch subcmd {
 		case "login":
-			err = cli.Auth.RunLogin(conf, conn)
+			err = cli.Auth.RunLogin(conf, client)
 		case "status":
 			err = cli.Auth.RunStatus(ctx, jwtManager)
+		case "activate":
+			err = cli.Auth.RunActivate(context.Background(), client)
 		default:
 			panic(fmt.Sprintf("unknown auth command: %s", subcmd))
 		}
@@ -115,15 +117,15 @@ func main() {
 		subcmd := cmd[1]
 		switch subcmd {
 		case "create":
-			err = cli.User.CreateUser(conf, client)
+			err = cli.User.CreateUser(ctx, conf, client)
 		case "list":
-			err = cli.User.ListUsers(conf, client)
+			err = cli.User.ListUsers(ctx, conf, client)
 		case "get":
-			err = cli.User.GetUser(conf, client)
+			err = cli.User.GetUser(ctx, conf, client)
 		case "update":
-			err = cli.User.UpdateUser(conf, client)
+			err = cli.User.UpdateUser(ctx, conf, client)
 		case "delete":
-			err = cli.User.DeleteUser(conf, client)
+			err = cli.User.DeleteUser(ctx, conf, client)
 		default:
 			panic(fmt.Sprintf("unknown user command: %s", subcmd))
 		}

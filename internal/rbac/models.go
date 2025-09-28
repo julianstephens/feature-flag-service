@@ -32,6 +32,7 @@ type RbacUser struct {
 	Email     string    `json:"email" db:"email"`
 	Name      string    `json:"name" db:"name"`
 	Password  string    `json:"-" db:"password"`
+	Activated bool      `json:"activated" db:"activated"`
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 }

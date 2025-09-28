@@ -59,6 +59,27 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /auth/activate:
+    post:
+      summary: Activate a user account
+      description: |
+        Activates a new user account.
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActivateRequest"
+      responses:
+        "200":
+          description: Account activated successfully
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
 components:
   schemas:
@@ -93,6 +114,17 @@ components:
         refresh_token:
           type: string
           description: Refresh token issued during login
+
+    ActivateRequest:
+      type: object
+      required: [email, new_password]
+      properties:
+        email:
+          type: string
+          format: email
+        new_password:
+          type: string
+          format: password
 
     ErrorResponse:
       type: object
