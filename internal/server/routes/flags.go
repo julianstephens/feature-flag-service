@@ -53,7 +53,7 @@ func RegisterFlagRoutes(router *mux.Router, flagSvc flag.Service, authSvc *auth.
 
 		var req ffpb.CreateFlagRequest
 		if err := request.DecodeJSON(r, &req); err != nil {
-			responder.BadRequest(w, r, err)
+			responder.BadRequest(w, r, err, nil)
 			return
 		}
 
@@ -72,7 +72,7 @@ func RegisterFlagRoutes(router *mux.Router, flagSvc flag.Service, authSvc *auth.
 
 		var req ffpb.UpdateFlagRequest
 		if err := request.DecodeJSON(r, &req); err != nil {
-			responder.BadRequest(w, r, err)
+			responder.BadRequest(w, r, err, nil)
 			return
 		}
 

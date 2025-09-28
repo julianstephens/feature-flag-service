@@ -62,6 +62,7 @@ func StartREST(addr string, conf *config.Config, services ...any) error {
 	authGrp := publicGrp.PathPrefix("/auth").Subrouter()
 	authGrp.HandleFunc("/login", auth.LoginHandler(authSvc, userSvc)).Methods("POST")
 	authGrp.HandleFunc("/refresh", auth.RefreshHandler(authSvc)).Methods("POST")
+	authGrp.HandleFunc("/activate", auth.ActivateHandler(authSvc)).Methods("POST")
 
 	privateGroup := publicGrp.PathPrefix("").Subrouter()
 	privateGroup.Use(middleware.JWTAuth(authSvc.Manager))

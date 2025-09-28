@@ -364,11 +364,31 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /rbac/roles:
+  /rbac/users/me:
     get:
-      summary: List roles
-      description: Retrieve all roles in the RBAC system
-      operationId: listRoles
+      summary: Get authenticated user
+      description: Retrieve details of the currently authenticated user
+      operationId: getAuthenticatedUser
+      tags:
+        - RBAC
+      responses:
+        "200":
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /rbac/users/me/roles:
+    get:
+      summary: Get roles of authenticated user
+      description: Retrieve roles assigned to the currently authenticated user
+      operationId: getAuthenticatedUserRoles
       tags:
         - RBAC
       responses:
@@ -380,232 +400,12 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Role"
-        "500":
-          $ref: "#/components/responses/InternalServerError"
-
-    post:
-      summary: Create role
-      description: Create a new role
-      operationId: createRole
-      tags:
-        - RBAC
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateRoleRequest"
-      responses:
-        "201":
-          description: Role created successfully
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Role"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "500":
-          $ref: "#/components/responses/InternalServerError"
-
-  /rbac/roles/{roleId}:
-    parameters:
-      - name: roleId
-        in: path
-        required: true
-        description: Unique identifier of the role
-        schema:
-          type: string
-
-    get:
-      summary: Get role
-      description: Retrieve a specific role by ID
-      operationId: getRole
-      tags:
-        - RBAC
-      responses:
-        "200":
-          description: Role details
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Role"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalServerError"
-
-    put:
-      summary: Update role
-      description: Update an existing role
-      operationId: updateRole
-      tags:
-        - RBAC
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UpdateRoleRequest"
-      responses:
-        "200":
-          description: Role updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Role"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalServerError"
-
-    delete:
-      summary: Delete role
-      description: Delete a role
-      operationId: deleteRole
-      tags:
-        - RBAC
-      responses:
-        "204":
-          description: Role deleted successfully
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalServerError"
-
-  /rbac/users:
-    get:
-      summary: List users
-      description: Retrieve all users in the RBAC system
-      operationId: listUsers
-      tags:
-        - RBAC
-      responses:
-        "200":
-          description: List of users
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/User"
-        "500":
-          $ref: "#/components/responses/InternalServerError"
-
-  /rbac/users/{userId}:
-    parameters:
-      - name: userId
-        in: path
-        required: true
-        description: Unique identifier of the user
-        schema:
-          type: string
-
-    get:
-      summary: Get user
-      description: Retrieve a specific user by ID
-      operationId: getUser
-      tags:
-        - RBAC
-      responses:
-        "200":
-          description: User details
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/User"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalServerError"
-
-  /rbac/users/{userId}/roles:
-    parameters:
-      - name: userId
-        in: path
-        required: true
-        description: Unique identifier of the user
-        schema:
-          type: string
-
-    get:
-      summary: Get user roles
-      description: Retrieve all roles assigned to a specific user
-      operationId: getUserRoles
-      tags:
-        - RBAC
-      responses:
-        "200":
-          description: List of user roles
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Role"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalServerError"
-
-    post:
-      summary: Assign role to user
-      description: Assign a role to a user
-      operationId: assignRoleToUser
-      tags:
-        - RBAC
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - roleId
-              properties:
-                roleId:
-                  type: string
-                  description: ID of the role to assign
-      responses:
-        "201":
-          description: Role assigned successfully
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalServerError"
-
-  /rbac/users/{userId}/roles/{roleId}:
-    parameters:
-      - name: userId
-        in: path
-        required: true
-        description: Unique identifier of the user
-        schema:
-          type: string
-      - name: roleId
-        in: path
-        required: true
-        description: Unique identifier of the role
-        schema:
-          type: string
-
-    delete:
-      summary: Remove role from user
-      description: Remove a role assignment from a user
-      operationId: removeRoleFromUser
-      tags:
-        - RBAC
-      responses:
-        "204":
-          description: Role removed successfully
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalServerError"
-
 components:
   schemas:
     Flag:
@@ -891,6 +691,7 @@ components:
         - id
         - name
         - email
+        - activated
         - createdAt
         - updatedAt
       properties:
@@ -911,6 +712,11 @@ components:
           type: boolean
           description: Whether the user account is activated
           example: true
+        roles:
+          type: array
+          items:
+            type: string
+          description: List of roles assigned to the user
         createdAt:
           type: string
           format: date-time
@@ -978,8 +784,21 @@ components:
             $ref: "#/components/schemas/Error"
           example:
             message: "Invalid input parameters"
-            code: "BAD_REQUEST"
-
+            details:
+              type: object
+              example:
+                { "field": "name", "error": "additional error information" }
+    Unauthorized:
+      description: Unauthorized - authentication required
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            message: "Authentication required"
+            details:
+              type: object
+              example: { "auth": "missing or invalid token" }
     NotFound:
       description: Resource not found
       content:
@@ -988,7 +807,9 @@ components:
             $ref: "#/components/schemas/Error"
           example:
             message: "Resource not found"
-            code: "NOT_FOUND"
+            details:
+              type: object
+              example: { "resource": "flag", "id": "flag-123" }
 
     InternalServerError:
       description: Internal server error
@@ -998,7 +819,9 @@ components:
             $ref: "#/components/schemas/Error"
           example:
             message: "An internal server error occurred"
-            code: "INTERNAL_SERVER_ERROR"
+            details:
+              type: object
+              example: { "error": "stack trace or error details" }
 
   securitySchemes:
     BearerAuth:
