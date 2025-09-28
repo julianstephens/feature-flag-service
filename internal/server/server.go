@@ -12,8 +12,10 @@ import (
 	"github.com/julianstephens/feature-flag-service/internal/auth"
 	"github.com/julianstephens/feature-flag-service/internal/config"
 	"github.com/julianstephens/feature-flag-service/internal/flag"
+	grpcmiddleware "github.com/julianstephens/feature-flag-service/internal/grpc"
 	"github.com/julianstephens/feature-flag-service/internal/rbac/users"
 	"github.com/julianstephens/feature-flag-service/internal/server/routes"
+	authutils "github.com/julianstephens/go-utils/httputil/auth"
 	"github.com/julianstephens/go-utils/httputil/middleware"
 	"github.com/julianstephens/go-utils/httputil/response"
 )
@@ -77,7 +79,7 @@ func StartREST(addr string, conf *config.Config, services ...any) error {
 	return srv.ListenAndServe()
 }
 
-func RegisterGRPC(grpcServer *grpc.Server, flagSvc flag.Service, authSvc auth.Service) {
+func RegisterGRPC(grpcServer *grpc.Server, flagSvc flag.Service, authSvc auth.Service, userSvc users.Service) {
 	ffpb.RegisterFlagServiceServer(grpcServer, &flag.FlagGRPCServer{
 		UnimplementedFlagServiceServer: ffpb.UnimplementedFlagServiceServer{},
 		Service:                        flagSvc,
@@ -86,4 +88,18 @@ func RegisterGRPC(grpcServer *grpc.Server, flagSvc flag.Service, authSvc auth.Se
 		UnimplementedAuthServiceServer: ffpb.UnimplementedAuthServiceServer{},
 		Service:                        authSvc,
 	})
+	ffpb.RegisterRbacUserServiceServer(grpcServer, &users.RbacUserGRPCServer{
+		UnimplementedRbacUserServiceServer: ffpb.UnimplementedRbacUserServiceServer{},
+		Service:                            userSvc,
+	})
+}
+
+// NewGRPCServerWithAuth creates a gRPC server with RBAC interceptors
+func NewGRPCServerWithAuth(jwtManager *authutils.JWTManager) *grpc.Server {
+	// Create server with method-based auth interceptor
+	opts := []grpc.ServerOption{
+		grpc.UnaryInterceptor(grpcmiddleware.MethodBasedAuthInterceptor(jwtManager, grpcmiddleware.MethodRoles)),
+	}
+
+	return grpc.NewServer(opts...)
 }

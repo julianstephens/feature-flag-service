@@ -1,45 +1,33 @@
 package commands
 
 import (
-	"bytes"
 	"context"
+	"errors"
 	"fmt"
-	"os"
+	"strings"
 	"time"
 
-	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/huh/spinner"
-	"github.com/charmbracelet/log"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 
 	ffpb "github.com/julianstephens/feature-flag-service/gen/go/grpc/v1/featureflag.v1"
+	"github.com/julianstephens/feature-flag-service/internal/auth"
 	"github.com/julianstephens/feature-flag-service/internal/cache"
 	"github.com/julianstephens/feature-flag-service/internal/config"
+	"github.com/julianstephens/feature-flag-service/internal/types"
 	"github.com/julianstephens/feature-flag-service/internal/utils"
-	"github.com/julianstephens/go-utils/helpers"
-	"github.com/julianstephens/go-utils/httputil/auth"
-	"github.com/julianstephens/go-utils/jsonutil"
+	"github.com/julianstephens/go-utils/cliutil"
+	authutil "github.com/julianstephens/go-utils/httputil/auth"
 	"github.com/julianstephens/go-utils/security"
 )
 
 const (
-	authFileName string = "auth.json"
-	keyFileName  string = "key.bin"
+	keyFileName string = "key.bin"
 )
 
-type Credentials struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-	ExpiresAt    int64  `json:"expires_at"`
-}
-
-type SecureAuthData struct {
-	Credentials []byte `json:"credentials"`
-}
-
-type AuthData struct {
-	Credentials Credentials
-}
+var (
+	ErrAlreadyLoggedIn = fmt.Errorf("already logged in")
+)
 
 type AuthCommand struct {
 	Login struct {
@@ -49,87 +37,65 @@ type AuthCommand struct {
 }
 
 func (c *AuthCommand) RunLogin(conf *config.Config, conn *grpc.ClientConn) error {
-	validator := utils.Validator{}
 	client := ffpb.NewAuthServiceClient(conn)
 	req := &ffpb.LoginRequest{
 		Email: c.Login.Email,
 	}
 
-	var password string
-	huh.NewInput().EchoMode(huh.EchoModePassword).Validate(validator.ValidatePassword).Title("Password: ").Value(&password).Run()
+	password := cliutil.PromptPassword("Password: ")
 	req.Password = password
 
 	ctx, cancel := context.WithTimeout(context.Background(), utils.DEFAULT_TIMEOUT)
 	defer cancel()
 
-	err := spinner.New().Context(ctx).Title("Logging in...").ActionWithErr(func(ctx context.Context) error {
-		return login(ctx, req, client)
-	}).Run()
-	if err != nil {
+	spinner := cliutil.NewSpinner("Logging in...")
+	spinner.Start()
+	err := login(ctx, req, client)
+	time.Sleep(500 * time.Millisecond) // Ensure spinner shows for at least half a second
+	spinner.Stop()
+	if err != nil && !errors.Is(err, ErrAlreadyLoggedIn) {
 		return err
+	} else if err != nil && errors.Is(err, ErrAlreadyLoggedIn) {
+		cliutil.PrintInfo("Already logged in")
+	} else {
+		cliutil.PrintSuccess("Login successful")
 	}
-
-	log.Info("Login successful")
 
 	return nil
 }
 
-func (c *AuthCommand) RunStatus(mgr *auth.JWTManager) error {
-	_, cancel := context.WithTimeout(context.Background(), utils.DEFAULT_TIMEOUT)
+func (c *AuthCommand) RunStatus(ctx context.Context, mgr *authutil.JWTManager) error {
+	_, cancel := context.WithTimeout(ctx, utils.DEFAULT_TIMEOUT)
 	defer cancel()
 
-	cachePath, err := cache.Dir()
-	if err != nil {
-		log.Error("Error getting cache directory", "error", err)
-		log.Info("Please set the XDG_CACHE_HOME environment variable to a writable directory")
-		return err
+	md, ok := metadata.FromOutgoingContext(ctx)
+	if !ok {
+		cliutil.PrintInfo("Not logged in. Use 'featurectl auth login' to log in.")
+		return nil
 	}
-
-	if !helpers.Exists(cachePath+"/"+keyFileName) || !helpers.Exists(cachePath+"/"+authFileName) {
-		log.Info("Not logged in. Use 'featurectl auth login' to log in.")
+	if len(md["authorization"]) == 0 {
+		cliutil.PrintInfo("Not logged in. Use 'featurectl auth login' to log in.")
 		return nil
 	}
 
-	key, err := loadKey()
+	token := strings.Split(md["authorization"][0], "Bearer ")[1]
+
+	claims, err := mgr.ValidateToken(token)
 	if err != nil {
-		log.Warn("Malformed login cache, please log in again")
-		cache.Remove(keyFileName)
-		cache.Remove(authFileName)
-		return err
+		cliutil.PrintInfo("Not logged in. Use 'featurectl auth login' to log in.")
+		return nil
 	}
 
-	authData, err := loadAuth(key)
-	if err != nil || authData == nil {
-		log.Warn("Malformed login cache, please log in again")
-		cache.Remove(keyFileName)
-		cache.Remove(authFileName)
-		return err
-	}
-	expiresAt := authData.Credentials.ExpiresAt
-	now := time.Now().Unix()
-	if expiresAt > 0 && now < (expiresAt-60) {
-		claims, err := mgr.ValidateToken(authData.Credentials.AccessToken)
-		if err != nil {
-			log.Warn("Invalid access token, please log in again")
-			cache.Remove(keyFileName)
-			cache.Remove(authFileName)
-			return err
-		}
-		log.Info("Logged in", "user", claims.Email, "id", claims.Subject, "expires_at", time.Unix(expiresAt, 0).Format(time.RFC1123))
-	} else {
-		log.Info("Login expired, please log in again")
-		cache.Remove(keyFileName)
-		cache.Remove(authFileName)
-	}
-
+	cliutil.PrintSuccess("Logged in")
+	utils.PrintUser(claims.Subject, claims.Email, "N/A", time.Unix(claims.IssuedAt.Unix(), 0).Format(time.RFC1123), time.Unix(claims.ExpiresAt.Unix(), 0).Format(time.RFC1123), claims.Roles)
 	return nil
 }
 
 func login(ctx context.Context, req *ffpb.LoginRequest, client ffpb.AuthServiceClient) (err error) {
-	var creds Credentials
+	var creds types.Credentials
 
 	// 1. Check for existing cache and load key
-	key, err := loadKey()
+	key, err := auth.LoadKey()
 	if err != nil {
 		err = fmt.Errorf("error loading key: %w", err)
 		return
@@ -149,22 +115,22 @@ func login(ctx context.Context, req *ffpb.LoginRequest, client ffpb.AuthServiceC
 	}
 
 	// 3. Use key to decrypt existing cache if exists
-	var authCache *AuthData
-	authCache, err = loadAuth(key)
+	var authCache *types.AuthData
+	authCache, err = auth.LoadAuth(key)
 	if err != nil {
 		return
 	}
 
 	var resp *ffpb.LoginResponse
 	if authCache == nil {
-		authCache = &AuthData{}
+		authCache = &types.AuthData{}
 		// No existing cache, proceed to login
 		resp, err = client.Login(ctx, req)
 		if err != nil {
 			err = fmt.Errorf("error logging in: %w", err)
 			return
 		}
-		authCache.Credentials = Credentials{
+		authCache.Credentials = types.Credentials{
 			AccessToken:  resp.AccessToken,
 			RefreshToken: resp.RefreshToken,
 			ExpiresAt:    time.Now().Unix() + resp.ExpiresIn,
@@ -173,8 +139,7 @@ func login(ctx context.Context, req *ffpb.LoginRequest, client ffpb.AuthServiceC
 		// Existing cache found, check if still valid
 		expiresAt := authCache.Credentials.ExpiresAt
 		if expiresAt > 0 && time.Now().Unix() < (expiresAt-60) {
-			log.Info("Already logged in")
-			return
+			return ErrAlreadyLoggedIn
 		}
 		// If expired, refresh tokens
 		resp, err = client.Refresh(ctx, &ffpb.RefreshRequest{
@@ -184,7 +149,7 @@ func login(ctx context.Context, req *ffpb.LoginRequest, client ffpb.AuthServiceC
 			err = fmt.Errorf("error refreshing token: %w", err)
 			return
 		}
-		authCache.Credentials = Credentials{
+		authCache.Credentials = types.Credentials{
 			AccessToken:  resp.AccessToken,
 			RefreshToken: resp.RefreshToken,
 			ExpiresAt:    time.Now().Unix() + resp.ExpiresIn,
@@ -193,74 +158,7 @@ func login(ctx context.Context, req *ffpb.LoginRequest, client ffpb.AuthServiceC
 	creds = authCache.Credentials
 
 	// 4. Encrypt and save cache
-	if err = secureSave(key, creds); err != nil {
-		return
-	}
-	return
-}
-
-func loadKey() (key []byte, err error) {
-	key, err = cache.ReadBytes(keyFileName)
-	if err != nil {
-		return
-	}
-	return
-}
-
-func loadAuth(key []byte) (authData *AuthData, err error) {
-	var secureCache SecureAuthData
-	var parsedCreds Credentials
-	var encrypted []byte
-
-	authData = &AuthData{}
-
-	err = cache.ReadJSON(authFileName, &secureCache)
-	if err != nil {
-		if !os.IsNotExist(err) {
-			err = fmt.Errorf("error reading auth cache: %w", err)
-			return
-		}
-		return nil, nil
-	}
-
-	encrypted = secureCache.Credentials
-	if len(encrypted) > 0 {
-		parsedCreds, err = decryptCredentials(key, encrypted)
-		if err != nil {
-			err = fmt.Errorf("error decrypting credentials: %w", err)
-			return
-		}
-		authData.Credentials = parsedCreds
-		return authData, nil
-	}
-
-	return nil, nil
-}
-
-func decryptCredentials(key []byte, encrypted []byte) (creds Credentials, err error) {
-	var decrypted []byte
-	decrypted, err = security.Decrypt(key, encrypted)
-	if err != nil {
-		return
-	}
-
-	if err = jsonutil.DecodeReader(bytes.NewReader(decrypted), &creds, &jsonutil.DecoderOptions{}); err != nil {
-		return
-	}
-
-	return
-}
-
-func secureSave(key []byte, creds Credentials) (err error) {
-	secureCache := SecureAuthData{}
-	encryptedResponse, err := security.Encrypt(key, helpers.MustMarshalJson(creds))
-	if err != nil {
-		return
-	}
-	secureCache.Credentials = encryptedResponse
-
-	if err = cache.WriteJSON(authFileName, secureCache); err != nil {
-		err = fmt.Errorf("error writing auth cache: %w", err)
+	if err = auth.SecureSave(key, creds); err != nil {
 		return
 	}
 	return

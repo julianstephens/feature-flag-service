@@ -5,7 +5,7 @@ option go_package = "featureflag.v1";
 service RbacUserService {
   rpc CreateUser(CreateUserRequest) returns (RbacUser) {}
   rpc GetUser(GetUserRequest) returns (RbacUser) {}
-  rpc GetUserByEmail(GetUserRequest) returns (RbacUser) {}
+  rpc GetUserByEmail(GetUserByEmailRequest) returns (RbacUser) {}
   rpc UpdateUser(UpdateUserRequest) returns (RbacUser) {}
   rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse) {}
   rpc ListUsers(ListUsersRequest) returns (ListUsersResponse) {}
@@ -49,4 +49,5 @@ message RbacUser {
     string name = 3;
     string created_at = 4;
     string updated_at = 5;
+    repeated string roles = 6;
 }

@@ -7,8 +7,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"google.golang.org/grpc"
-
 	"github.com/julianstephens/feature-flag-service/internal/auth"
 	"github.com/julianstephens/feature-flag-service/internal/config"
 	"github.com/julianstephens/feature-flag-service/internal/flag"
@@ -34,7 +32,7 @@ func main() {
 
 	flagService := flag.NewService(conf, etcdClient)
 	userService := users.NewRbacUserService(conf, pgClient)
-	authService, err := auth.NewAuthClient(conf, userService)
+	authService, err := auth.NewAuthClient(conf, userService.(*users.RbacUserService))
 	if err != nil {
 		logger.Fatalf("Failed to create auth service: %v", err)
 	}
@@ -51,8 +49,8 @@ func main() {
 		if err != nil {
 			logger.Fatalf("Failed to listen on gRPC port %s: %v", conf.GRPCPort, err)
 		}
-		grpcServer := grpc.NewServer()
-		server.RegisterGRPC(grpcServer, flagService, authService)
+		grpcServer := server.NewGRPCServerWithAuth((authService.(*auth.AuthClient)).Manager)
+		server.RegisterGRPC(grpcServer, flagService, authService, userService)
 		logger.Infof("Starting gRPC API on :%s...", conf.GRPCPort)
 		if err := grpcServer.Serve(lis); err != nil {
 			logger.Fatalf("gRPC server error: %v", err)

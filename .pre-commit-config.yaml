@@ -4,3 +4,4 @@ repos:
     hooks:
       - id: go-mod-tidy
       - id: go-fmt
+        args: ["-w"]

@@ -37,7 +37,7 @@ const (
 
 type Service interface {
 	CreateUser(ctx context.Context, email, name, password string, roles []string) (*rbac.RbacUserDto, error)
-	UpdateUser(ctx context.Context, id, email, name, password string, roles []string) error
+	UpdateUser(ctx context.Context, id, email, name string, roles []string) error
 	GetUser(ctx context.Context, id string) (*rbac.RbacUserDto, error)
 	GetUserByEmail(ctx context.Context, email string) (*rbac.RbacUserDto, error)
 	DeleteUser(ctx context.Context, id string) error
@@ -45,14 +45,14 @@ type Service interface {
 	ListUserRoles(ctx context.Context, id string) ([]*rbac.RbacRoleDto, error)
 }
 
-func NewRbacUserService(conf *config.Config, store *storage.PostgresStore) *RbacUserService {
+func NewRbacUserService(conf *config.Config, store *storage.PostgresStore) Service {
 	return &RbacUserService{
 		conf:  conf,
 		store: store,
 	}
 }
 
-func (s *RbacUserService) CreateUser(email, name, password string, roles []string) (*rbac.RbacUserDto, error) {
+func (s *RbacUserService) CreateUser(ctx context.Context, email, name, password string, roles []string) (*rbac.RbacUserDto, error) {
 	hashedPassword, err := security.HashPassword(password)
 	if err != nil {
 		return nil, err
@@ -65,12 +65,12 @@ func (s *RbacUserService) CreateUser(email, name, password string, roles []strin
 		Password: hashedPassword,
 	}
 
-	if err := s.store.Post(context.Background(), RBAC_USER_TABLE, helpers.StructToMap(newUser)); err != nil {
+	if err := s.store.Post(ctx, RBAC_USER_TABLE, helpers.StructToMap(newUser)); err != nil {
 		logger.Errorf("Error creating user %s: %v", email, err)
 		return nil, err
 	}
 
-	s.store.Post(context.Background(), RBAC_USER_ROLES_TABLE, map[string]any{
+	s.store.Post(ctx, RBAC_USER_ROLES_TABLE, map[string]any{
 		"user_id": newUser.ID,
 		"roles":   roles,
 	})
@@ -154,8 +154,8 @@ func (s *RbacUserService) GetUserByEmail(ctx context.Context, email string) (*rb
 	}, nil
 }
 
-func (s *RbacUserService) UpdateUser(id, email, password string, roles []string) error {
-	// return s.store.Put(context.Background(), id, map[string]interface{}{
+func (s *RbacUserService) UpdateUser(ctx context.Context, id, email, password string, roles []string) error {
+	// return s.store.Put(ctx, id, map[string]interface{}{
 	// 	"username": username,
 	// 	"email":    email,
 	// 	"password": password,
@@ -164,8 +164,8 @@ func (s *RbacUserService) UpdateUser(id, email, password string, roles []string)
 	return nil
 }
 
-func (s *RbacUserService) DeleteUser(id string) error {
-	// return s.store.Delete(context.Background(), id, s.rbacUserTable)
+func (s *RbacUserService) DeleteUser(ctx context.Context, id string) error {
+	// return s.store.Delete(ctx, id, s.rbacUserTable)
 	return nil
 }
 
