@@ -66,6 +66,9 @@ func StartREST(addr string, conf *config.Config, services ...any) error {
 
 	routes.RegisterFlagRoutes(privateGroup.PathPrefix("/flags").Subrouter(), flagSvc, authSvc, responder)
 
+	rbacGrp := privateGroup.PathPrefix("/rbac").Subrouter()
+	routes.RegisterRbacUserRoutes(rbacGrp.PathPrefix("/users").Subrouter(), userSvc, authSvc, responder)
+
 	srv := &http.Server{
 		Addr:    addr,
 		Handler: router,
@@ -74,9 +77,13 @@ func StartREST(addr string, conf *config.Config, services ...any) error {
 	return srv.ListenAndServe()
 }
 
-func RegisterGRPC(grpcServer *grpc.Server, flagSvc flag.Service) {
+func RegisterGRPC(grpcServer *grpc.Server, flagSvc flag.Service, authSvc auth.Service) {
 	ffpb.RegisterFlagServiceServer(grpcServer, &flag.FlagGRPCServer{
 		UnimplementedFlagServiceServer: ffpb.UnimplementedFlagServiceServer{},
 		Service:                        flagSvc,
+	})
+	ffpb.RegisterAuthServiceServer(grpcServer, &auth.AuthGRPCServer{
+		UnimplementedAuthServiceServer: ffpb.UnimplementedAuthServiceServer{},
+		Service:                        authSvc,
 	})
 }

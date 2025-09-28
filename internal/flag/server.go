@@ -25,6 +25,7 @@ func (s *FlagGRPCServer) ListFlags(ctx context.Context, req *ffpb.ListFlagsReque
 
 func (s *FlagGRPCServer) GetFlag(ctx context.Context, req *ffpb.GetFlagRequest) (*ffpb.Flag, error) {
 	flag, err := s.Service.GetFlag(ctx, req.Id)
+
 	if err != nil {
 		return nil, err
 	}

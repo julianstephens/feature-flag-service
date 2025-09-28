@@ -8,12 +8,12 @@ type RbacRoleDto struct {
 }
 
 type RbacRole struct {
-	ID           int       `json:"-"`
-	PublicRoleID string    `json:"id"`
-	Name         string    `json:"name"`
-	Description  string    `json:"description"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	ID           int       `json:"-" db:"id"`
+	PublicRoleID string    `json:"id" db:"public_id"`
+	Name         string    `json:"name" db:"name"`
+	Description  string    `json:"description" db:"description"`
+	CreatedAt    time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at" db:"updated_at"`
 }
 
 type CreateRbacRoleRequest struct {
@@ -28,12 +28,12 @@ type RbacUserDto struct {
 }
 
 type RbacUser struct {
-	ID        string    `json:"id"`
-	Email     string    `json:"email"`
-	Name      string    `json:"name"`
-	Password  string    `json:"-"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID        string    `json:"id" db:"id"`
+	Email     string    `json:"email" db:"email"`
+	Name      string    `json:"name" db:"name"`
+	Password  string    `json:"-" db:"password"`
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 }
 
 type CreateRbacUserRequest struct {
@@ -41,10 +41,15 @@ type CreateRbacUserRequest struct {
 	Name  string `json:"name"`
 }
 
+type UpdateRbacUserRequest struct {
+	CreateRbacUserRequest
+}
+
 type RbacPermission struct {
-	ID          int    `json:"-"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	ID          int       `json:"-" db:"id"`
+	Name        string    `json:"name" db:"name"`
+	Description string    `json:"description" db:"description"`
+	CreatedAt   time.Time `json:"created_at" db:"created_at"`
 }
 
 type CreateRbacPermissionRequest struct {

@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/jackc/pgx/v5"
@@ -48,16 +49,40 @@ func (p *PostgresStore) Exec(ctx context.Context, sql string, args ...any) error
 }
 
 // ListAll retrieves all rows from the specified table
-func (p *PostgresStore) ListAll(ctx context.Context, table string, dest []any) error {
-	if err := pgxscan.Select(ctx, p.db, dest, "SELECT * FROM $1", table); err != nil {
+func (p *PostgresStore) ListAll(ctx context.Context, table string, dest any) error {
+	sql := fmt.Sprintf("SELECT * FROM %s", table)
+	if err := pgxscan.Select(ctx, p.db, dest, sql); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (p *PostgresStore) Get(ctx context.Context, table string, dest any, where string, args ...any) error {
-	if err := pgxscan.Get(ctx, p.db, dest, "SELECT * FROM $1 WHERE $2 LIMIT 1", table, where); err != nil {
+func (p *PostgresStore) Get(ctx context.Context, table string, dest any, whereClause string, args ...any) error {
+	sql := fmt.Sprintf("SELECT * FROM %s WHERE %s LIMIT 1", table, whereClause)
+	if err := pgxscan.Get(ctx, p.db, dest, sql, args...); err != nil {
 		return err
 	}
 	return nil
+}
+
+func (p *PostgresStore) Post(ctx context.Context, table string, data map[string]any) error {
+	columns := ""
+	values := ""
+	args := []any{}
+	i := 1
+
+	for k, v := range data {
+		if columns != "" {
+			columns += ", "
+			values += ", "
+		}
+		columns += k
+		values += fmt.Sprintf("$%d", i)
+		args = append(args, v)
+		i++
+	}
+
+	sql := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", table, columns, values)
+	_, err := p.db.Exec(ctx, sql, args...)
+	return err
 }

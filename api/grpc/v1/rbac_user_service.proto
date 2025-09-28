@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+option go_package = "featureflag.v1";
+
+service RbacUserService {
+  rpc CreateUser(CreateUserRequest) returns (RbacUser) {}
+  rpc GetUser(GetUserRequest) returns (RbacUser) {}
+  rpc GetUserByEmail(GetUserRequest) returns (RbacUser) {}
+  rpc UpdateUser(UpdateUserRequest) returns (RbacUser) {}
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse) {}
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse) {}
+}
+
+message CreateUserRequest {
+  string email = 1;
+  string name = 2;
+  string password = 3;
+}
+
+message GetUserRequest {
+  string id = 1;
+}
+
+message GetUserByEmailRequest {
+  string email = 1;
+}
+
+message UpdateUserRequest {
+  string id = 1;
+  string email = 2;
+  string name = 3;
+}
+
+message DeleteUserRequest {
+  string id = 1;
+}
+
+message DeleteUserResponse {}
+
+message ListUsersRequest {}
+
+message ListUsersResponse {
+    repeated RbacUser users = 1;
+}
+
+message RbacUser {
+    string id = 1;
+    string email = 2;
+    string name = 3;
+    string created_at = 4;
+    string updated_at = 5;
+}

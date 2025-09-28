@@ -33,11 +33,11 @@ func main() {
 	defer pgClient.Close()
 
 	flagService := flag.NewService(conf, etcdClient)
-	authService, err := auth.NewAuthClient(conf)
+	userService := users.NewRbacUserService(conf, pgClient)
+	authService, err := auth.NewAuthClient(conf, userService)
 	if err != nil {
 		logger.Fatalf("Failed to create auth service: %v", err)
 	}
-	userService := users.NewRbacUserService(conf, pgClient)
 
 	go func() {
 		logger.Infof("Starting REST API on :%s...", conf.HTTPPort)
@@ -52,7 +52,7 @@ func main() {
 			logger.Fatalf("Failed to listen on gRPC port %s: %v", conf.GRPCPort, err)
 		}
 		grpcServer := grpc.NewServer()
-		server.RegisterGRPC(grpcServer, flagService)
+		server.RegisterGRPC(grpcServer, flagService, authService)
 		logger.Infof("Starting gRPC API on :%s...", conf.GRPCPort)
 		if err := grpcServer.Serve(lis); err != nil {
 			logger.Fatalf("gRPC server error: %v", err)

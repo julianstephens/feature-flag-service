@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/alecthomas/kong"
 	"github.com/charmbracelet/log"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/julianstephens/feature-flag-service/internal/commands"
 	"github.com/julianstephens/feature-flag-service/internal/config"
+	"github.com/julianstephens/go-utils/httputil/auth"
 )
 
 type Globals struct {
@@ -20,8 +22,7 @@ type Globals struct {
 type CLI struct {
 	Globals
 
-	Login struct {
-	} `cmd:"" help:"Login to the feature management system."`
+	Auth  commands.AuthCommand `cmd:"" help:"Manage authentication."`
 	Flag  commands.FlagCommand `cmd:"" help:"Manage feature flags."`
 	Audit struct {
 	} `cmd:"" help:"Audit log operations."`
@@ -35,7 +36,10 @@ func main() {
 	}
 
 	conf := config.LoadConfig()
-
+	jwtManager, err := auth.NewJWTManager(conf.JWTSecret, time.Duration(conf.JWTExpiry), conf.JWTIssuer)
+	if err != nil {
+		log.Fatal("Failed to create JWT manager:", "error", err)
+	}
 	var conn *grpc.ClientConn
 	conn, err = grpc.NewClient(":"+conf.GRPCPort, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
@@ -53,8 +57,21 @@ func main() {
 
 	cmd := strings.Split(kongCtx.Command(), " ")
 	switch cmd[0] {
-	case "login":
-		// Implement login functionality here
+	case "auth":
+		if len(cmd) < 2 {
+			kongCtx.PrintUsage(false)
+			return
+		}
+		subcmd := cmd[1]
+
+		switch subcmd {
+		case "login":
+			err = cli.Auth.RunLogin(conf, conn)
+		case "status":
+			err = cli.Auth.RunStatus(jwtManager)
+		default:
+			panic(fmt.Sprintf("unknown auth command: %s", subcmd))
+		}
 	case "flag":
 		if len(cmd) < 2 {
 			kongCtx.PrintUsage(false)

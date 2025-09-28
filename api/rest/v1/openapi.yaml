@@ -493,30 +493,6 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-    post:
-      summary: Create user
-      description: Create a new user
-      operationId: createUser
-      tags:
-        - RBAC
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateUserRequest"
-      responses:
-        "201":
-          description: User created successfully
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/User"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "500":
-          $ref: "#/components/responses/InternalServerError"
-
   /rbac/users/{userId}:
     parameters:
       - name: userId
@@ -539,46 +515,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalServerError"
-
-    put:
-      summary: Update user
-      description: Update an existing user
-      operationId: updateUser
-      tags:
-        - RBAC
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UpdateUserRequest"
-      responses:
-        "200":
-          description: User updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/User"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalServerError"
-
-    delete:
-      summary: Delete user
-      description: Delete a user
-      operationId: deleteUser
-      tags:
-        - RBAC
-      responses:
-        "204":
-          description: User deleted successfully
         "404":
           $ref: "#/components/responses/NotFound"
         "500":
@@ -953,7 +889,7 @@ components:
       type: object
       required:
         - id
-        - username
+        - name
         - email
         - createdAt
         - updatedAt
@@ -962,23 +898,15 @@ components:
           type: string
           description: Unique identifier for the user
           example: "user-123e4567-e89b-12d3-a456-426614174000"
-        username:
-          type: string
-          description: Username for the user
-          example: "john.doe"
         email:
           type: string
           format: email
           description: Email address of the user
           example: "john.doe@example.com"
-        fullName:
+        name:
           type: string
           description: Full name of the user
           example: "John Doe"
-        active:
-          type: boolean
-          description: Whether the user account is active
-          example: true
         createdAt:
           type: string
           format: date-time
@@ -993,48 +921,35 @@ components:
     CreateUserRequest:
       type: object
       required:
-        - username
+        - password
         - email
       properties:
-        username:
-          type: string
-          description: Username for the new user
-          example: "jane.smith"
         email:
           type: string
           format: email
           description: Email address of the new user
           example: "jane.smith@example.com"
-        fullName:
+        name:
           type: string
           description: Full name of the new user
           example: "Jane Smith"
-        active:
-          type: boolean
-          description: Whether the user account should be active
-          default: true
-          example: true
+        password:
+          type: string
+          description: Password for the new user
+          example: "securepassword123"
 
     UpdateUserRequest:
       type: object
       properties:
-        username:
-          type: string
-          description: Updated username
-          example: "jane.doe"
         email:
           type: string
           format: email
           description: Updated email address
           example: "jane.doe@example.com"
-        fullName:
+        name:
           type: string
           description: Updated full name
           example: "Jane Doe"
-        active:
-          type: boolean
-          description: Updated active status
-          example: false
 
     Error:
       type: object
@@ -1045,10 +960,6 @@ components:
           type: string
           description: Human-readable error message
           example: "Resource not found"
-        code:
-          type: string
-          description: Error code for programmatic handling
-          example: "RESOURCE_NOT_FOUND"
         details:
           type: object
           description: Additional error details
