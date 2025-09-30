@@ -20,10 +20,6 @@ import (
 	"github.com/julianstephens/go-utils/security"
 )
 
-const (
-	keyFileName string = "key.bin"
-)
-
 var (
 	ErrAlreadyLoggedIn = fmt.Errorf("already logged in")
 )
@@ -38,6 +34,7 @@ type AuthCommand struct {
 		Password    string `help:"The temporary password for the user."`
 		NewPassword string `help:"New password for the user."`
 	} `cmd:"" help:"Activate a user account with a new password."`
+	Logout struct{} `cmd:"" help:"Logout from the featurectl CLI"`
 }
 
 func (c *AuthCommand) RunLogin(conf *config.Config, client ffpb.AuthServiceClient) error {
@@ -68,7 +65,7 @@ func (c *AuthCommand) RunLogin(conf *config.Config, client ffpb.AuthServiceClien
 }
 
 func (c *AuthCommand) RunStatus(ctx context.Context, mgr *authutil.JWTManager) error {
-	_, cancel := context.WithTimeout(ctx, utils.DEFAULT_TIMEOUT)
+	ctx, cancel := context.WithTimeout(ctx, utils.DEFAULT_TIMEOUT)
 	defer cancel()
 
 	md, ok := metadata.FromOutgoingContext(ctx)
@@ -90,7 +87,7 @@ func (c *AuthCommand) RunStatus(ctx context.Context, mgr *authutil.JWTManager) e
 	}
 
 	cliutil.PrintSuccess("Logged in")
-	utils.PrintUser(claims.Subject, claims.Email, "N/A", time.Unix(claims.IssuedAt.Unix(), 0).Format(time.RFC1123), time.Unix(claims.ExpiresAt.Unix(), 0).Format(time.RFC1123), claims.Roles)
+	utils.PrintUser(claims.Subject, claims.Email, "N/A", "N/A", "N/A", claims.Roles)
 	return nil
 }
 
@@ -120,7 +117,7 @@ func (c *AuthCommand) RunActivate(ctx context.Context, client ffpb.AuthServiceCl
 		cliutil.PrintError("Failed to generate encryption key")
 		return err
 	}
-	if err := cache.WriteBytes(keyFileName, key); err != nil {
+	if err := cache.WriteBytes(utils.DEFAULT_KEY_FILE, key); err != nil {
 		cliutil.PrintError("Failed to save encryption key")
 		return err
 	}
@@ -132,6 +129,43 @@ func (c *AuthCommand) RunActivate(ctx context.Context, client ffpb.AuthServiceCl
 
 	cliutil.PrintSuccess("Account activated successfully")
 
+	return nil
+}
+
+func (c *AuthCommand) RunLogout(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, utils.DEFAULT_TIMEOUT)
+	defer cancel()
+
+	metadata, ok := metadata.FromOutgoingContext(ctx)
+	if !ok {
+		cliutil.PrintInfo("Not logged in")
+		return nil
+	}
+	if len(metadata["authorization"]) == 0 {
+		cliutil.PrintInfo("Not logged in")
+		return nil
+	}
+
+	key, err := auth.LoadKey()
+	if err != nil {
+		cliutil.PrintInfo("Not logged in")
+		return nil
+	}
+	if len(key) == 0 {
+		cliutil.PrintInfo("Not logged in")
+		return nil
+	}
+
+	if err := cache.Remove(utils.DEFAULT_KEY_FILE); err != nil {
+		cliutil.PrintError("Failed to delete encryption key")
+		return err
+	}
+	if err := cache.Remove(utils.DEFAULT_AUTH_CACHE_FILE); err != nil {
+		cliutil.PrintError("Failed to delete authentication data")
+		return err
+	}
+
+	cliutil.PrintSuccess("Logged out successfully")
 	return nil
 }
 
@@ -152,7 +186,7 @@ func login(ctx context.Context, req *ffpb.LoginRequest, client ffpb.AuthServiceC
 			err = fmt.Errorf("error generating key: %w", err)
 			return
 		}
-		if err = cache.WriteBytes(keyFileName, key); err != nil {
+		if err = cache.WriteBytes(utils.DEFAULT_KEY_FILE, key); err != nil {
 			err = fmt.Errorf("error writing key: %w", err)
 			return
 		}

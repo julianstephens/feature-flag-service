@@ -86,3 +86,23 @@ func (p *PostgresStore) Post(ctx context.Context, table string, data map[string]
 	_, err := p.db.Exec(ctx, sql, args...)
 	return err
 }
+
+func (p *PostgresStore) Put(ctx context.Context, table string, data map[string]any, whereClause string, whereArgs ...any) error {
+	setClause := ""
+	args := []any{}
+	i := 1
+
+	for k, v := range data {
+		if setClause != "" {
+			setClause += ", "
+		}
+		setClause += fmt.Sprintf("%s=$%d", k, i)
+		args = append(args, v)
+		i++
+	}
+
+	args = append(args, whereArgs...)
+	sql := fmt.Sprintf("UPDATE %s SET %s WHERE %s", table, setClause, whereClause)
+	_, err := p.db.Exec(ctx, sql, args...)
+	return err
+}

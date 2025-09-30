@@ -122,6 +122,9 @@ components:
         email:
           type: string
           format: email
+        password:
+          type: string
+          format: password
         new_password:
           type: string
           format: password
@@ -133,15 +136,6 @@ components:
           type: string
         message:
           type: string
-
-securitySchemes:
-  bearerAuth:
-    type: http
-    scheme: bearer
-    bearerFormat: JWT
-
-security:
-  - bearerAuth: []
 
 tags:
   - name: auth

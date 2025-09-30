@@ -12,6 +12,7 @@ import (
 	"github.com/julianstephens/go-utils/helpers"
 	"github.com/julianstephens/go-utils/logger"
 	"github.com/julianstephens/go-utils/security"
+	"github.com/julianstephens/go-utils/validator"
 )
 
 // TODO: standardize role schema
@@ -37,7 +38,7 @@ const (
 
 type Service interface {
 	CreateUser(ctx context.Context, email, name, password string, roles []string) (*rbac.RbacUserDto, error)
-	UpdateUser(ctx context.Context, id, email, name string, roles []string) error
+	UpdateUser(ctx context.Context, id string, email, name *string) error
 	ActivateUser(ctx context.Context, id, newPassword string) error
 	GetUser(ctx context.Context, id string) (*rbac.RbacUserDto, error)
 	GetUserByEmail(ctx context.Context, email string) (*rbac.RbacUserDto, error)
@@ -155,13 +156,30 @@ func (s *RbacUserService) GetUserByEmail(ctx context.Context, email string) (*rb
 	}, nil
 }
 
-func (s *RbacUserService) UpdateUser(ctx context.Context, id, email, password string, roles []string) error {
-	// return s.store.Put(ctx, id, map[string]interface{}{
-	// 	"username": username,
-	// 	"email":    email,
-	// 	"password": password,
-	// 	"roles":    roles,
-	// }, s.rbacUserTable)
+func (s *RbacUserService) UpdateUser(ctx context.Context, id string, email, name *string) error {
+	user, err := s.GetUser(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	if email != nil {
+		if err := validator.ValidateEmail(*email); err != nil {
+			return err
+		}
+		user.Email = *email
+	}
+	if name != nil {
+		user.Name = *name
+	}
+
+	if err := s.store.Put(ctx, RBAC_USER_TABLE, map[string]any{
+		"email": user.Email,
+		"name":  user.Name,
+	}, "id=$1", id); err != nil {
+		logger.Errorf("Error updating user %s: %v", id, err)
+		return err
+	}
+
 	return nil
 }
 

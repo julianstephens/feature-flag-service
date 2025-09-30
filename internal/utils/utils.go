@@ -12,8 +12,12 @@ import (
 	"github.com/julianstephens/go-utils/cliutil"
 )
 
-const DEFAULT_TIMEOUT = 30 * time.Second
-const DEFAULT_KEY_SIZE = 32 // 256 bits
+const (
+	DEFAULT_TIMEOUT         = 30 * time.Second
+	DEFAULT_KEY_SIZE        = 32 // 256 bits
+	DEFAULT_KEY_FILE        = "key.bin"
+	DEFAULT_AUTH_CACHE_FILE = "auth.json"
+)
 
 const (
 	lower     = "abcdefghijklmnopqrstuvwxyz"

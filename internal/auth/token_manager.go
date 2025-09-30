@@ -11,15 +11,11 @@ import (
 
 	"github.com/julianstephens/feature-flag-service/internal/cache"
 	"github.com/julianstephens/feature-flag-service/internal/types"
+	"github.com/julianstephens/feature-flag-service/internal/utils"
 	"github.com/julianstephens/go-utils/helpers"
 	"github.com/julianstephens/go-utils/httputil/auth"
 	"github.com/julianstephens/go-utils/jsonutil"
 	"github.com/julianstephens/go-utils/security"
-)
-
-const (
-	authFileName = "auth.json"
-	keyFileName  = "key.bin"
 )
 
 // TokenManager handles loading and managing authentication tokens
@@ -42,7 +38,7 @@ func (tm *TokenManager) LoadToken() (string, error) {
 	}
 
 	// Check if auth files exist
-	if !helpers.Exists(cachePath+"/"+keyFileName) || !helpers.Exists(cachePath+"/"+authFileName) {
+	if !helpers.Exists(cachePath+"/"+utils.DEFAULT_KEY_FILE) || !helpers.Exists(cachePath+"/"+utils.DEFAULT_AUTH_CACHE_FILE) {
 		return "", ErrNotLoggedIn
 	}
 
@@ -50,8 +46,8 @@ func (tm *TokenManager) LoadToken() (string, error) {
 	key, err := LoadKey()
 	if err != nil {
 		log.Warn("Malformed login cache, please log in again")
-		cache.Remove(keyFileName)
-		cache.Remove(authFileName)
+		cache.Remove(utils.DEFAULT_KEY_FILE)
+		cache.Remove(utils.DEFAULT_AUTH_CACHE_FILE)
 		return "", ErrNotLoggedIn
 	}
 
@@ -60,16 +56,16 @@ func (tm *TokenManager) LoadToken() (string, error) {
 	authData, err = LoadAuth(key)
 	if err != nil {
 		log.Warn("Malformed login cache, please log in again")
-		cache.Remove(keyFileName)
-		cache.Remove(authFileName)
+		cache.Remove(utils.DEFAULT_KEY_FILE)
+		cache.Remove(utils.DEFAULT_AUTH_CACHE_FILE)
 		return "", ErrNotLoggedIn
 	}
 
 	// Validate token
 	_, err = tm.jwtManager.ValidateToken(authData.Credentials.AccessToken)
 	if err != nil {
-		cache.Remove(keyFileName)
-		cache.Remove(authFileName)
+		cache.Remove(utils.DEFAULT_KEY_FILE)
+		cache.Remove(utils.DEFAULT_AUTH_CACHE_FILE)
 		return "", ErrTokenExpired
 	}
 
@@ -104,7 +100,7 @@ func (e *AuthError) Error() string {
 }
 
 func LoadKey() (key []byte, err error) {
-	key, err = cache.ReadBytes(keyFileName)
+	key, err = cache.ReadBytes(utils.DEFAULT_KEY_FILE)
 	if err != nil {
 		return
 	}
@@ -118,7 +114,7 @@ func LoadAuth(key []byte) (authData *types.AuthData, err error) {
 
 	authData = &types.AuthData{}
 
-	err = cache.ReadJSON(authFileName, &secureCache)
+	err = cache.ReadJSON(utils.DEFAULT_AUTH_CACHE_FILE, &secureCache)
 	if err != nil {
 		if !os.IsNotExist(err) {
 			err = fmt.Errorf("error reading auth cache: %w", err)
@@ -163,7 +159,7 @@ func SecureSave(key []byte, creds types.Credentials) (err error) {
 	}
 	secureCache.Credentials = encryptedResponse
 
-	if err = cache.WriteJSON(authFileName, secureCache); err != nil {
+	if err = cache.WriteJSON(utils.DEFAULT_AUTH_CACHE_FILE, secureCache); err != nil {
 		err = fmt.Errorf("error writing auth cache: %w", err)
 		return
 	}

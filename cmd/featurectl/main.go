@@ -62,12 +62,16 @@ func main() {
 		kong.Vars{"version": "1.0.0"},
 	)
 
+	cmd := strings.Split(kongCtx.Command(), " ")
+
 	ctx, err := createAuthenticatedContext(jwtManager)
-	if err != nil {
+	if err != nil && cmd[0] != "auth" {
 		cliutil.PrintWarning("Authentication not configured. Some commands may require authentication.")
 	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
 
-	cmd := strings.Split(kongCtx.Command(), " ")
 	switch cmd[0] {
 	case "auth":
 		if len(cmd) < 2 {
@@ -83,6 +87,8 @@ func main() {
 			err = cli.Auth.RunStatus(ctx, jwtManager)
 		case "activate":
 			err = cli.Auth.RunActivate(context.Background(), client)
+		case "logout":
+			err = cli.Auth.RunLogout(ctx)
 		default:
 			panic(fmt.Sprintf("unknown auth command: %s", subcmd))
 		}
