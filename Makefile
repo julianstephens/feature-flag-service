@@ -1,5 +1,5 @@
 
-.PHONY: help apigen migrate revision seed utils
+.PHONY: help apigen migrate revision seed utils build fmt
 
 help: ## Prints help for targets with comments
 	@cat $(MAKEFILE_LIST) | grep -E '^[a-zA-Z_-]+:.*?## .*$$' | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -25,6 +25,16 @@ seed: ## Seed the database with initial data
 	@rm -f bin/seeder
 
 utils: ## Install latest go-utils
+	@if [ -z "$(version)" ]; then echo "Error: version parameter is required. Usage: make utils utils=your_version_name"; exit 1; fi
 	@echo "Installing go-utils..."
 	@go clean -modcache
-	@go get github.com/julianstephens/go-utils@latest
+	@go get github.com/julianstephens/go-utils@$(version)
+
+build: ## Build project
+	@echo "Building project..."
+	@go build -o bin/featurectl cmd/featurectl/main.go
+	@chmod +x bin/featurectl
+
+fmt: ## Format code
+	@echo "Formatting code..."
+	@gofmt -s -w .

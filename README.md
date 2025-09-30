@@ -61,7 +61,8 @@ A scalable feature flag management system with REST and gRPC APIs. This project 
 ```plaintext
 /
 ├── cmd/
-│   └── api/                  # Entrypoint for the API service
+│   ├── api/                  # Entrypoint for the API service
+│   └── featurectl/           # Entrypoint for the featurectl CLI
 ├── internal/
 │   ├── flag/                 # Feature flag logic and interface
 │   ├── config/               # Dynamic configuration logic
@@ -71,7 +72,7 @@ A scalable feature flag management system with REST and gRPC APIs. This project 
 │   └── server/               # REST and gRPC server wiring
 ├── api/grpc/v1/              # Protobuf (gRPC) definitions
 ├── Dockerfile                # API service Dockerfile
-├── docker-compose.yaml       # Development/test stack
+├── compose.yml               # Development/test stack
 ├── compose/                  # Optional: production and override compose files
 ├── deploy/                   # Infrastructure-as-code, k8s manifests, etc.
 ├── README.md                 # This file
@@ -91,7 +92,8 @@ A scalable feature flag management system with REST and gRPC APIs. This project 
 ### Running with Docker Compose
 
 ```sh
-docker-compose up --build
+# uses the repository `compose.yml` file
+docker compose -f compose.yml up --build
 ```
 
 - Feature Flag API: http://localhost:8080
@@ -124,6 +126,11 @@ The [`internal/server`](internal/server) package wires up both REST (using [gori
 
 - `StartREST`: Sets up HTTP routes and handlers
 - `RegisterGRPC`: Registers gRPC services with the gRPC server
+
+Additional notes:
+
+- The repository includes a small CLI (`cmd/featurectl`) that talks to the gRPC API; it implements automatic token caching and a TokenManager for seamless authenticated CLI operations.
+- Database migration SQL files are in the `migrations/` directory (including RBAC tables: roles, permissions, role_permissions, user_roles).
 
 ---
 
