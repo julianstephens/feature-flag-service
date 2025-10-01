@@ -72,10 +72,13 @@ func (s *RbacUserService) CreateUser(ctx context.Context, email, name, password 
 		return nil, err
 	}
 
-	s.store.Post(ctx, RBAC_USER_ROLES_TABLE, map[string]any{
+	if err := s.store.Post(ctx, RBAC_USER_ROLES_TABLE, map[string]any{
 		"user_id": newUser.ID,
 		"roles":   roles,
-	})
+	}); err != nil {
+		logger.Errorf("Error assigning roles to user %s: %v", email, err)
+		return nil, err
+	}
 
 	return &rbac.RbacUserDto{
 		RbacUser: newUser,
