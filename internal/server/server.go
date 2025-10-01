@@ -1,40 +1,38 @@
 package server
 
 import (
-	"context"
 	"log"
 	"net/http"
-	"time"
+	"os"
 
 	"github.com/gorilla/mux"
-	"go.etcd.io/etcd/api/v3/v3rpc/rpctypes"
 	"google.golang.org/grpc"
 
 	ffpb "github.com/julianstephens/feature-flag-service/gen/go/grpc/v1/featureflag.v1"
+	"github.com/julianstephens/feature-flag-service/internal/auth"
 	"github.com/julianstephens/feature-flag-service/internal/config"
 	"github.com/julianstephens/feature-flag-service/internal/flag"
-	"github.com/julianstephens/go-utils/httputil/request"
+	grpcmiddleware "github.com/julianstephens/feature-flag-service/internal/grpc"
+	"github.com/julianstephens/feature-flag-service/internal/rbac/users"
+	"github.com/julianstephens/feature-flag-service/internal/server/routes"
+	authutils "github.com/julianstephens/go-utils/httputil/auth"
+	"github.com/julianstephens/go-utils/httputil/middleware"
 	"github.com/julianstephens/go-utils/httputil/response"
 )
 
-
-const (
-	DEFAULT_TIMEOUT = 30 * time.Second
-)
-
 func StartREST(addr string, conf *config.Config, services ...any) error {
-	responder := response.NewWithLogging()
-	router := mux.NewRouter()
-	apiGrp := router.PathPrefix("/api/"+conf.APIVersion).Subrouter()
-	apiGrp.HandleFunc("/checkhealth", func(w http.ResponseWriter, r *http.Request) {
-		responder.OK(w, r, map[string]string{"status": "OK", "version": "1.0", "name": "Feature Flag Service"})
-	})
+	logger := log.New(os.Stdout, "[HTTP] ", log.LstdFlags)
+	errorLogger := log.New(os.Stderr, "[ERROR] ", log.LstdFlags)
 
 	servicesMap := make(map[string]any)
 	for _, svc := range services {
 		switch s := svc.(type) {
 		case flag.Service:
 			servicesMap["flagService"] = s
+		case *auth.AuthClient:
+			servicesMap["authService"] = s
+		case *users.RbacUserService:
+			servicesMap["userService"] = s
 		// case config.Service: --- IGNORE ---
 		// 	servicesMap["configService"] = s --- IGNORE ---
 		// case audit.Service: --- IGNORE ---
@@ -45,86 +43,34 @@ func StartREST(addr string, conf *config.Config, services ...any) error {
 			log.Printf("Warning: Unknown service type %T provided to StartREST", s)
 		}
 	}
-
-	
+	authSvc := servicesMap["authService"].(*auth.AuthClient)
+	userSvc := servicesMap["userService"].(*users.RbacUserService)
 	flagSvc := servicesMap["flagService"].(flag.Service)
-	flags := apiGrp.PathPrefix("/flags").Subrouter()
-	flags.HandleFunc("", func(w http.ResponseWriter, r *http.Request) {
-		ctx, cancel := context.WithTimeout(context.Background(), DEFAULT_TIMEOUT)
-		defer cancel()
 
-		res, err := flagSvc.ListFlags(ctx)
-		if err != nil {
-			handleError(responder, w, r, err)
-			return
-		}
-		responder.OK(w, r, res)
-	}).Methods("GET")
-	flags.HandleFunc("", func(w http.ResponseWriter, r *http.Request) {
-		ctx, cancel := context.WithTimeout(context.Background(), DEFAULT_TIMEOUT)
-		defer cancel()
+	responder := response.NewEmpty()
 
-		var req ffpb.CreateFlagRequest
-		if err := request.DecodeJSON(r, &req); err != nil {
-			responder.BadRequest(w, r, err)
-			return
-		}
+	router := mux.NewRouter()
+	router.Use(middleware.RequestID())
+	router.Use(middleware.Logging(logger))
+	router.Use(middleware.Recovery(errorLogger))
+	router.Use(middleware.CORS(middleware.DefaultCORSConfig()))
 
-		res, err := flagSvc.CreateFlag(ctx, req.Name, req.Description, req.Enabled)
-		if err != nil {
-			handleError(responder, w, r, err)
-			return
-		}
-		responder.Created(w, r, res)
-	}).Methods("POST")
-	flags.HandleFunc("/{flagKey}", func(w http.ResponseWriter, r *http.Request) {
-		ctx, cancel := context.WithTimeout(context.Background(), DEFAULT_TIMEOUT)
-		defer cancel()
+	publicGrp := router.PathPrefix("/api/" + conf.APIVersion).Subrouter()
+	publicGrp.HandleFunc("/checkhealth", func(w http.ResponseWriter, r *http.Request) {
+		responder.OK(w, r, map[string]string{"status": "OK", "version": "1.0", "name": "Feature Flag Service"})
+	})
+	authGrp := publicGrp.PathPrefix("/auth").Subrouter()
+	authGrp.HandleFunc("/login", auth.LoginHandler(authSvc, userSvc)).Methods("POST")
+	authGrp.HandleFunc("/refresh", auth.RefreshHandler(authSvc)).Methods("POST")
+	authGrp.HandleFunc("/activate", auth.ActivateHandler(authSvc)).Methods("POST")
 
-		vars := mux.Vars(r)
-		flagKey := vars["flagKey"]
+	privateGroup := publicGrp.PathPrefix("").Subrouter()
+	privateGroup.Use(middleware.JWTAuth(authSvc.Manager))
 
-		res, err := flagSvc.GetFlag(ctx, flagKey)
-		if err != nil {
-			handleError(responder, w, r, err)
-			return
-		}
+	routes.RegisterFlagRoutes(privateGroup.PathPrefix("/flags").Subrouter(), flagSvc, authSvc, responder)
 
-		responder.OK(w, r, res)
-	}).Methods("GET")
-	flags.HandleFunc("/{flagKey}", func(w http.ResponseWriter, r *http.Request) {
-		ctx, cancel := context.WithTimeout(context.Background(), DEFAULT_TIMEOUT)
-		defer cancel()
-		vars := mux.Vars(r)
-		flagKey := vars["flagKey"]
-
-		var req ffpb.UpdateFlagRequest
-		if err := request.DecodeJSON(r, &req); err != nil {
-			responder.BadRequest(w, r, err)
-			return
-		}
-		
-		res, err := flagSvc.UpdateFlag(ctx, flagKey, req.Name, req.Description, req.Enabled)
-		if err != nil {
-			handleError(responder, w, r, err)
-			return
-		}
-
-		responder.OK(w, r, res)
-	}).Methods("PUT")
-	flags.HandleFunc("/{flagKey}", func(w http.ResponseWriter, r *http.Request) {
-		ctx, cancel := context.WithTimeout(context.Background(), DEFAULT_TIMEOUT)
-		defer cancel()
-		vars := mux.Vars(r)
-		flagKey := vars["flagKey"]
-
-		err := flagSvc.DeleteFlag(ctx, flagKey)
-		if err != nil {
-			handleError(responder, w, r, err)
-			return
-		}
-		responder.NoContent(w, r)
-	}).Methods("DELETE")
+	rbacGrp := privateGroup.PathPrefix("/rbac").Subrouter()
+	routes.RegisterRbacUserRoutes(rbacGrp.PathPrefix("/users").Subrouter(), userSvc, authSvc, responder)
 
 	srv := &http.Server{
 		Addr:    addr,
@@ -134,22 +80,27 @@ func StartREST(addr string, conf *config.Config, services ...any) error {
 	return srv.ListenAndServe()
 }
 
-func RegisterGRPC(grpcServer *grpc.Server, flagSvc flag.Service) {
+func RegisterGRPC(grpcServer *grpc.Server, flagSvc flag.Service, authSvc auth.Service, userSvc users.Service) {
 	ffpb.RegisterFlagServiceServer(grpcServer, &flag.FlagGRPCServer{
 		UnimplementedFlagServiceServer: ffpb.UnimplementedFlagServiceServer{},
 		Service:                        flagSvc,
 	})
+	ffpb.RegisterAuthServiceServer(grpcServer, &auth.AuthGRPCServer{
+		UnimplementedAuthServiceServer: ffpb.UnimplementedAuthServiceServer{},
+		Service:                        authSvc,
+	})
+	ffpb.RegisterRbacUserServiceServer(grpcServer, &users.RbacUserGRPCServer{
+		UnimplementedRbacUserServiceServer: ffpb.UnimplementedRbacUserServiceServer{},
+		Service:                            userSvc,
+	})
 }
 
-func handleError(responder *response.Responder, w http.ResponseWriter, r *http.Request, err error) {
-	switch err {
-	case context.Canceled:
-		responder.Error(w, r, err)
-	case context.DeadlineExceeded:
-		responder.Error(w, r, err)
-	case rpctypes.ErrEmptyKey:
-		responder.BadRequest(w, r, err)
-	default:
-		responder.Error(w, r, err)
+// NewGRPCServerWithAuth creates a gRPC server with RBAC interceptors
+func NewGRPCServerWithAuth(jwtManager *authutils.JWTManager) *grpc.Server {
+	// Create server with method-based auth interceptor
+	opts := []grpc.ServerOption{
+		grpc.UnaryInterceptor(grpcmiddleware.MethodBasedAuthInterceptor(jwtManager, grpcmiddleware.MethodRoles)),
 	}
+
+	return grpc.NewServer(opts...)
 }

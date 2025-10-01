@@ -35,6 +35,7 @@ This checklist covers major tasks required to complete the Feature Flag Service 
 - [x] Provide `cmd/api/main.go` as entrypoint (starts REST & gRPC, handles shutdown)
 - [x] Implement `internal/server/server.go` (REST/gRPC wiring)
 - [ ] Add middleware for logging, authentication, and request tracing
+- [x] Add middleware for logging, authentication, and request tracing
 - [x] Add graceful shutdown for HTTP and gRPC servers
 
 ---
@@ -42,15 +43,25 @@ This checklist covers major tasks required to complete the Feature Flag Service 
 ## 5. Configuration & Security
 
 - [x] Environment variable config (document all required vars)
-- [ ] JWT authentication middleware for admin endpoints
-- [ ] RBAC enforcement in API handlers
+ - [x] JWT authentication middleware for admin endpoints
+ - [x] RBAC enforcement in API handlers
+
+### RBAC (granular tasks)
+
+- [ ] Database migrations for RBAC tables (roles, permissions, role_permissions, user_roles)
+- [x] Seed basic roles and permissions (admin, viewer, editor)
+- [x] Database migrations for RBAC tables (roles, permissions, role_permissions, user_roles)
+- [ ] Admin UI/CLI tools to manage roles and permissions
+- [x] gRPC RBAC enforcement (method-based interceptors)
+- [ ] REST RBAC enforcement (middleware or handler-level checks)
+- [ ] Unit tests for RBAC rules and enforcement
+- [ ] Documentation for RBAC roles, permissions, and how to extend them
 
 ---
 
 ## 6. Protobuf & OpenAPI
 
-[x] Define/complete proto files for `FlagService`, etc.
-
+- [x] Define/complete proto files for `FlagService`, etc.
 - [x] Generate gRPC and REST server/client stubs
 - [x] Provide OpenAPI spec for HTTP API
 

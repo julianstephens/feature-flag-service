@@ -1,5 +1,5 @@
 
-.PHONY: help apigen migrate
+.PHONY: help apigen migrate revision seed utils build fmt
 
 help: ## Prints help for targets with comments
 	@cat $(MAKEFILE_LIST) | grep -E '^[a-zA-Z_-]+:.*?## .*$$' | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -11,3 +11,30 @@ apigen:   ## Generate gRPC API code
 migrate: ## Run database migrations
 	@echo "Running database migrations..."
 	@migrate -path ./migrations -database ${DB_URL} up
+
+revision: ## Create a new database migration
+	@if [ -z "$(name)" ]; then echo "Error: name parameter is required. Usage: make revision name=your_migration_name"; exit 1; fi
+	@echo "Creating new migration: $(name)"
+	@migrate create -ext sql -dir ./migrations -seq $(name)
+
+seed: ## Seed the database with initial data
+	@echo "Seeding the database..."
+	@go build -o bin/seeder cmd/seed/main.go
+	@chmod +x bin/seeder
+	@POSTGRES_URL=${DB_URL} ./bin/seeder
+	@rm -f bin/seeder
+
+utils: ## Install latest go-utils
+	@if [ -z "$(version)" ]; then echo "Error: version parameter is required. Usage: make utils utils=your_version_name"; exit 1; fi
+	@echo "Installing go-utils..."
+	@go clean -modcache
+	@go get github.com/julianstephens/go-utils@$(version)
+
+build: ## Build project
+	@echo "Building project..."
+	@go build -o bin/featurectl cmd/featurectl/main.go
+	@chmod +x bin/featurectl
+
+fmt: ## Format code
+	@echo "Formatting code..."
+	@gofmt -s -w .

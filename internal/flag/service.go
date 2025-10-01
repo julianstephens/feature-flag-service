@@ -7,8 +7,6 @@ import (
 	"log"
 	"time"
 
-	clientv3 "go.etcd.io/etcd/client/v3"
-
 	ffpb "github.com/julianstephens/feature-flag-service/gen/go/grpc/v1/featureflag.v1"
 	"github.com/julianstephens/feature-flag-service/internal/config"
 	"github.com/julianstephens/feature-flag-service/internal/storage"
@@ -18,10 +16,10 @@ import (
 var ErrFlagNotFound = errors.New("flag not found")
 
 type Flag struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Enabled     bool `json:"enabled"`
+	ID          string    `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	Enabled     bool      `json:"enabled"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
@@ -35,15 +33,15 @@ type Service interface {
 }
 
 type FlagService struct {
-	conf  *config.Config
-	store storage.Store[clientv3.OpOption]
+	conf   *config.Config
+	store  *storage.EtcdStore
 	prefix string
 }
 
 func NewService(conf *config.Config, etcdClient *storage.EtcdStore) Service {
 	return &FlagService{
-		conf:  conf,
-		store: etcdClient,
+		conf:   conf,
+		store:  etcdClient,
 		prefix: conf.FlagServicePrefix,
 	}
 }
@@ -53,7 +51,7 @@ func (s *FlagService) GetKey(key string) string {
 }
 
 func (s *FlagService) ListFlags(ctx context.Context) ([]*Flag, error) {
-	res, err := s.store.List(ctx, "")
+	res, err := s.store.ListAll(ctx, "")
 	if err != nil {
 		return nil, err
 	}
@@ -78,9 +76,13 @@ func (s *FlagService) GetFlag(ctx context.Context, id string) (*Flag, error) {
 		}
 		return nil, err
 	}
+	data, err := s.store.ParseSingleGetResponse(resp)
+	if err != nil {
+		return nil, err
+	}
 
 	var flag Flag
-	if err := json.Unmarshal([]byte(resp), &flag); err != nil {
+	if err := json.Unmarshal(data, &flag); err != nil {
 		return nil, err
 	}
 	return &flag, nil
@@ -136,7 +138,8 @@ func (s *FlagService) UpdateFlag(ctx context.Context, id, name, description stri
 }
 
 func (s *FlagService) DeleteFlag(ctx context.Context, id string) error {
-	return s.store.Delete(ctx, s.GetKey(id))
+	_, err := s.store.Delete(ctx, s.GetKey(id))
+	return err
 }
 
 func (f *Flag) ToProto() *ffpb.Flag {

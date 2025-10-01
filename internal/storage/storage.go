@@ -5,9 +5,11 @@ import (
 	"errors"
 )
 
-
-var ErrKeyNotFound = errors.New("key not found")
-var ErrNotImplemented = errors.New("not implemented")
+var (
+	ErrKeyNotFound    = errors.New("key not found")
+	ErrKeyExists      = errors.New("key already exists")
+	ErrNotImplemented = errors.New("not implemented")
+)
 
 type Store[T any] interface {
 	Connect() error

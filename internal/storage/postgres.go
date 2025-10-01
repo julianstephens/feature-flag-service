@@ -2,109 +2,107 @@ package storage
 
 import (
 	"context"
-	"strings"
-	"sync"
+	"fmt"
 
+	"github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/julianstephens/feature-flag-service/internal/config"
 )
 
-var (
-	dbConn *pgx.Conn
-	once   sync.Once
-)
-
 type PostgresStore struct {
-	TableName string
-	Columns   []string
-	IdxKey    string
+	db *pgxpool.Pool
 }
 
-type PostgresOption struct {
-	TableName   string
-	Columns     []string
-	IdxKey      string
-}
-
-func NewPostgresStore(opts PostgresOption) *PostgresStore {
-	return &PostgresStore{
-		TableName: opts.TableName,
-		Columns:   opts.Columns,
-		IdxKey:    opts.IdxKey,
-	}
-}
-
-func Connect() error {
-	var err error
-	once.Do(func() {
-		conf := config.LoadConfig()
-		conn, e := pgx.Connect(context.Background(), conf.PostgresURL)
-		if e != nil {
-			err = e
-		}
-		dbConn = conn
-	})
-	return err
-}
-
-func Close() error {
-	if dbConn != nil {
-		return dbConn.Close(context.Background())
-	}
-	return nil
-}
-
-
-func (s *PostgresStore) List(ctx context.Context, prefix string, opts ...any) (map[string]string, error) {
-	if dbConn == nil {
-		if err := Connect(); err != nil {
-			return nil, err
-		}
-	}
-
-	query := "SELECT " + strings.Join(s.Columns, ",") + " FROM " + s.TableName
-	args := []interface{}{}
-
-	if prefix != "" {
-		query += " WHERE " + s.IdxKey + " LIKE $1"
-		args = append(args, prefix+"%")
-	}
-
-	rows, err := dbConn.Query(ctx, query, args...)
+func NewPostgresStore(conf *config.Config) (*PostgresStore, error) {
+	pool, err := pgxpool.New(context.Background(), conf.PostgresURL)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	result := make(map[string]string)
-	for rows.Next() {
-		var key, value string
-		if err := rows.Scan(&key, &value); err != nil {
-			return nil, err
-		}
-		result[key] = value
-	}
-
-	if err := rows.Err(); err != nil {
+	// Test connection
+	err = pool.Ping(context.Background())
+	if err != nil {
 		return nil, err
 	}
 
-	return result, nil
+	return &PostgresStore{db: pool}, nil
 }
 
-func Get(ctx context.Context, prefix string, opts ...any) (string, error) {
-	return "", nil
-}
-
-func Post(ctx context.Context, prefix string, opts ...any) (string, error) {
-	return "", nil
-}
-
-func Put(ctx context.Context, prefix string, opts ...any) (string, error) {
-	return "", nil
-}
-
-func Delete(ctx context.Context, prefix string, opts ...any) error {
+func (p *PostgresStore) Close() error {
+	if p.db != nil {
+		p.db.Close()
+	}
 	return nil
+}
+
+// Query helper
+func (p *PostgresStore) Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
+	return p.db.Query(ctx, sql, args...)
+}
+
+// Exec helper
+func (p *PostgresStore) Exec(ctx context.Context, sql string, args ...any) error {
+	_, err := p.db.Exec(ctx, sql, args...)
+	return err
+}
+
+// ListAll retrieves all rows from the specified table
+func (p *PostgresStore) ListAll(ctx context.Context, table string, dest any) error {
+	sql := fmt.Sprintf("SELECT * FROM %s", table)
+	if err := pgxscan.Select(ctx, p.db, dest, sql); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (p *PostgresStore) Get(ctx context.Context, table string, dest any, whereClause string, args ...any) error {
+	sql := fmt.Sprintf("SELECT * FROM %s WHERE %s LIMIT 1", table, whereClause)
+	if err := pgxscan.Get(ctx, p.db, dest, sql, args...); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (p *PostgresStore) Post(ctx context.Context, table string, data map[string]any) error {
+	columns := ""
+	values := ""
+	args := []any{}
+	i := 1
+
+	for k, v := range data {
+		if columns != "" {
+			columns += ", "
+			values += ", "
+		}
+		columns += k
+		values += fmt.Sprintf("$%d", i)
+		args = append(args, v)
+		i++
+	}
+
+	sql := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", table, columns, values)
+	_, err := p.db.Exec(ctx, sql, args...)
+	return err
+}
+
+func (p *PostgresStore) Put(ctx context.Context, table string, data map[string]any, whereClause string, whereArgs ...any) error {
+	setClause := ""
+	args := []any{}
+	i := 1
+
+	for k, v := range data {
+		if setClause != "" {
+			setClause += ", "
+		}
+		setClause += fmt.Sprintf("%s=$%d", k, i)
+		args = append(args, v)
+		i++
+	}
+
+	args = append(args, whereArgs...)
+	sql := fmt.Sprintf("UPDATE %s SET %s WHERE %s", table, setClause, whereClause)
+	_, err := p.db.Exec(ctx, sql, args...)
+	return err
 }

@@ -1,0 +1,1 @@
+ALTER TABLE rbac_users DROP COLUMN activated;

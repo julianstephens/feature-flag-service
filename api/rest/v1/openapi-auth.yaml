@@ -1,0 +1,142 @@
+openapi: 3.0.3
+info:
+  title: Feature Flag Service Authentication API
+  version: "1.0"
+  description: |
+    API specification for user authentication using JWT. Clients authenticate by POSTing credentials and receive a signed JWT token for use in subsequent requests.
+
+servers:
+  - url: http://localhost:8080/api/v1
+
+paths:
+  /auth/login:
+    post:
+      summary: User login and JWT issuance
+      description: |
+        Authenticates a user and returns a JWT token. The client must submit valid credentials.
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Successful authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /auth/refresh:
+    post:
+      summary: Refresh JWT token
+      description: |
+        Refreshes a JWT token using a valid refresh token (if implemented).
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshRequest"
+      responses:
+        "200":
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
+          description: Invalid or expired refresh token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /auth/activate:
+    post:
+      summary: Activate a user account
+      description: |
+        Activates a new user account.
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActivateRequest"
+      responses:
+        "200":
+          description: Account activated successfully
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: JWT access token to be used in Authorization header
+        expires_in:
+          type: integer
+          description: Token expiration time in seconds
+        refresh_token:
+          type: string
+          description: Optional refresh token, if implemented
+
+    RefreshRequest:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token:
+          type: string
+          description: Refresh token issued during login
+
+    ActivateRequest:
+      type: object
+      required: [email, new_password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+        new_password:
+          type: string
+          format: password
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+
+tags:
+  - name: auth
+    description: Authentication endpoints for JWT

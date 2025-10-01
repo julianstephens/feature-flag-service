@@ -1,0 +1,1 @@
+ALTER TABLE rbac_users ADD COLUMN activated BOOLEAN DEFAULT FALSE;
